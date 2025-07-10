@@ -99,7 +99,8 @@ function SuccessPageContent() {
     const fetchSessionData = async () => {
       try {
         console.log(`🎫 Fetching session data (attempt ${retryCount + 1}/${maxRetries})`)
-        const response = await fetch(`/api/checkout/success?session_id=${sessionId}`)
+        const apiUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+        const response = await fetch(`${apiUrl}/api/checkout/success?session_id=${sessionId}`)
         if (!response.ok) {
           throw new Error('Failed to fetch session data')
         }
