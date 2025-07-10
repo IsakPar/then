@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+
 interface Venue {
   id: string
   name: string
@@ -59,7 +60,11 @@ interface SeatMapSection {
   sortOrder: number
 }
 
-export default function VenueDashboard() {
+export default function VenuePage() {
+  return <VenueDashboard />
+}
+
+function VenueDashboard() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'venues' | 'shows' | 'seatmaps'>('venues')
   const [previewSeatMapId, setPreviewSeatMapId] = useState<string | null>(null)

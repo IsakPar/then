@@ -92,13 +92,33 @@ function SuccessPageContent() {
       return
     }
 
+    let retryCount = 0
+    const maxRetries = 10
+    let retryInterval: NodeJS.Timeout
+
     const fetchSessionData = async () => {
       try {
+        console.log(`🎫 Fetching session data (attempt ${retryCount + 1}/${maxRetries})`)
         const response = await fetch(`/api/checkout/success?session_id=${sessionId}`)
         if (!response.ok) {
           throw new Error('Failed to fetch session data')
         }
         const data = await response.json()
+        
+        console.log('🎫 Session data received:', {
+          payment_status: data.payment_status,
+          verification_code: data.verification_code,
+          has_show_details: !!data.show_details
+        })
+
+        // If still processing and we haven't exceeded retries, try again
+        if (data.verification_code === 'PROCESSING' && retryCount < maxRetries) {
+          retryCount++
+          console.log(`⏳ Still processing, retrying in 3 seconds (${retryCount}/${maxRetries})`)
+          retryInterval = setTimeout(fetchSessionData, 3000)
+          return
+        }
+
         setSessionData(data)
 
         // Generate QR code for validation code
@@ -113,10 +133,17 @@ function SuccessPageContent() {
           })
           setQrCodeUrl(qrUrl)
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
+        
         setLoading(false)
+      } catch (err) {
+        console.error('❌ Error fetching session data:', err)
+        if (retryCount < maxRetries) {
+          retryCount++
+          retryInterval = setTimeout(fetchSessionData, 3000)
+        } else {
+          setError(err instanceof Error ? err.message : 'Unknown error')
+          setLoading(false)
+        }
       }
     }
 
@@ -124,7 +151,11 @@ function SuccessPageContent() {
 
     // Stop confetti after 5 seconds
     const confettiTimer = setTimeout(() => setShowConfetti(false), 5000)
-    return () => clearTimeout(confettiTimer)
+    
+    return () => {
+      clearTimeout(confettiTimer)
+      if (retryInterval) clearTimeout(retryInterval)
+    }
   }, [sessionId])
 
   const downloadPDF = async () => {
