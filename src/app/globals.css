@@ -1,0 +1,441 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* Performance optimizations */
+* {
+  box-sizing: border-box;
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Mobile-first optimizations */
+@media (max-width: 768px) {
+  /* Better touch targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* Desktop grid improvements */
+@media (min-width: 768px) {
+  .grid-desktop-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+/* Loading animation optimization */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom backdrop blur for better browser support */
+.backdrop-blur-custom {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@supports not (backdrop-filter: blur(12px)) {
+  .backdrop-blur-custom {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* Focus states for accessibility */
+button:focus, input:focus, textarea:focus, select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Remove default focus styles in favor of custom ones */
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+/* Transition optimizations */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-shadow {
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Custom hover effects */
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(45deg, #f59e0b, #f97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  .text-responsive-xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+
+@media (min-width: 641px) {
+  .text-responsive-xl {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .text-responsive-xl {
+    font-size: 2.5rem;
+    line-height: 3rem;
+  }
+}
+
+/* Improved form styles */
+input::placeholder,
+textarea::placeholder {
+  opacity: 0.7;
+}
+
+/* Better select styling */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Seat Map Drag and Drop Styles */
+.seat-map-svg {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.draggable-section {
+  cursor: grab;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.draggable-section:hover {
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
+}
+
+.draggable-section.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+}
+
+.seat-map-container.dragging-active {
+  cursor: grabbing;
+}
+
+.section-group.dragging {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+}
+
+/* Prevent text selection during drag */
+.seat-map-svg text {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Seat Map Styling */
+.seat {
+  cursor: pointer;
+  stroke-width: 1.5;
+}
+
+/* Available seats - section-specific colors */
+.seat-available[data-section-type="premium"] {
+  fill: #ffd700;
+  stroke: #e6c200;
+}
+
+.seat-available[data-section-type="standard"] {
+  fill: #22c55e;
+  stroke: #16a34a;
+}
+
+.seat-available[data-section-type="side"] {
+  fill: #3b82f6;
+  stroke: #2563eb;
+}
+
+.seat-available[data-section-type="middle"] {
+  fill: #a855f7;
+  stroke: #9333ea;
+}
+
+.seat-available[data-section-type="back"] {
+  fill: #f97316;
+  stroke: #ea580c;
+}
+
+/* Fallback for seats without section type */
+.seat-available:not([data-section-type]) {
+  fill: #22c55e;
+  stroke: #16a34a;
+}
+
+/* Hover effects - subtle color brightening only */
+.seat-available[data-section-type="premium"]:hover {
+  fill: #ffed4a;
+  stroke: #f5e027;
+}
+
+.seat-available[data-section-type="standard"]:hover {
+  fill: #34d399;
+  stroke: #059669;
+}
+
+.seat-available[data-section-type="side"]:hover {
+  fill: #60a5fa;
+  stroke: #3b82f6;
+}
+
+.seat-available[data-section-type="middle"]:hover {
+  fill: #c084fc;
+  stroke: #a855f7;
+}
+
+.seat-available[data-section-type="back"]:hover {
+  fill: #fb923c;
+  stroke: #f97316;
+}
+
+.seat-available:not([data-section-type]):hover {
+  fill: #34d399;
+  stroke: #059669;
+}
+
+.seat-selected {
+  fill: #3b82f6;
+  stroke: #1d4ed8;
+}
+
+.seat-booked {
+  fill: #ef4444;
+  stroke: #dc2626;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.seat-reserved {
+  fill: #f59e0b;
+  stroke: #d97706;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+
+
+/* ACCESSIBILITY IMPROVEMENTS */
+.seat:focus {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* LOADING STATE */
+.seat-loading {
+  fill: #9ca3af;
+  stroke: #6b7280;
+  cursor: wait;
+  pointer-events: none;
+}
+
+/* 🔥 CRITICAL FIX: SELECTED SEAT STATE - Bright red, obvious */
+.seat-selected {
+  fill: #ef4444 !important;
+  stroke: #dc2626 !important;
+  stroke-width: 2px !important;
+  /* No animations, no pulsing, no movement */
+}
+
+.seat-selected:hover {
+  /* Slight darkening on hover for selected seats */
+  fill: #dc2626 !important;
+}
+
+/* 🔥 FIXED: UNAVAILABLE SEATS - Bold red for permanence */
+.seat-booked {
+  fill: #b91c1c !important; /* red-700 - bold and permanent */
+  stroke: #991b1b !important; /* red-800 for contrast */
+  stroke-width: 2px !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.seat-reserved {
+  fill: #9ca3af !important; /* gray for temporary reservations */
+  stroke: #6b7280 !important;
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.seat-booked:hover,
+.seat-reserved:hover {
+  /* No changes on hover for unavailable seats */
+}
+
+/* Removed pulse-glow animation - enterprise design uses subtle, static states */
+
+/* Image fallback styling */
+.image-fallback {
+  background: linear-gradient(135deg, #d97706 0%, #ea580c 50%, #dc2626 100%) !important;
+}
+
+.image-fallback::after {
+  content: '🎭';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  z-index: 1;
+}
+
+/* ============================================================================
+   RESPONSIVE SEAT MAP ENHANCEMENTS
+   ============================================================================ */
+
+/* Ensure SVG is fully responsive and never overflows */
+.seat-map-svg,
+svg[viewBox] {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Responsive seat sizes for mobile devices */
+@media (max-width: 768px) {
+  .seat {
+    stroke-width: 1px; /* Thinner strokes on smaller screens */
+  }
+  
+  .seat-selected {
+    stroke-width: 1.5px !important;
+  }
+  
+  .seat-booked {
+    stroke-width: 1.5px !important;
+  }
+}
+
+/* Ensure seats remain clickable and visible at all scales */
+@media (max-width: 480px) {
+  .seat {
+    min-width: 20px;
+    min-height: 18px;
+  }
+}
+
+/* High-DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .seat {
+    shape-rendering: geometricPrecision;
+  }
+}
+
+/* Ensure container is always responsive */
+.seat-map-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Responsive typography for SVG text elements */
+@media (max-width: 768px) {
+  svg text {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  svg text {
+    font-size: 10px !important;
+  }
+}

@@ -1,0 +1,350 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* Performance optimizations */
+* {
+  box-sizing: border-box;
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Mobile-first optimizations */
+@media (max-width: 768px) {
+  /* Better touch targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* Desktop grid improvements */
+@media (min-width: 768px) {
+  .grid-desktop-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+/* Loading animation optimization */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom backdrop blur for better browser support */
+.backdrop-blur-custom {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@supports not (backdrop-filter: blur(12px)) {
+  .backdrop-blur-custom {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* Focus states for accessibility */
+button:focus, input:focus, textarea:focus, select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Remove default focus styles in favor of custom ones */
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+/* Transition optimizations */
+.transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-shadow {
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Custom hover effects */
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(45deg, #f59e0b, #f97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  .text-responsive-xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+}
+
+@media (min-width: 641px) {
+  .text-responsive-xl {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .text-responsive-xl {
+    font-size: 2.5rem;
+    line-height: 3rem;
+  }
+}
+
+/* Improved form styles */
+input::placeholder,
+textarea::placeholder {
+  opacity: 0.7;
+}
+
+/* Better select styling */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Seat Map Drag and Drop Styles */
+.seat-map-svg {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.draggable-section {
+  cursor: grab;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.draggable-section:hover {
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
+}
+
+.draggable-section.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+}
+
+.seat-map-container.dragging-active {
+  cursor: grabbing;
+}
+
+.section-group.dragging {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+}
+
+/* Prevent text selection during drag */
+.seat-map-svg text {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 🔥 ENTERPRISE-GRADE: Stable Seat Selection States */
+.seat {
+  cursor: pointer;
+  transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
+  /* NO transforms, NO movement, NO filters to prevent jitter */
+}
+
+/* AVAILABLE SEATS - Section-based colors */
+.seat-available {
+  cursor: pointer;
+  stroke-width: 1px;
+}
+
+/* Section-specific colors for available seats */
+.seat-available[data-section-type="premium"] {
+  fill: #ffd700;
+  stroke: #cc9900;
+}
+
+.seat-available[data-section-type="side"] {
+  fill: #66bb6a;
+  stroke: #388e3c;
+}
+
+.seat-available[data-section-type="middle"] {
+  fill: #ab47bc;
+  stroke: #7b1fa2;
+}
+
+.seat-available[data-section-type="back"] {
+  fill: #ff7043;
+  stroke: #d84315;
+}
+
+.seat-available:not([data-section-type]) {
+  fill: #60a5fa;
+  stroke: #3b82f6;
+}
+
+/* SELECTED SEATS - Prominent blue selection */
+.seat-selected {
+  fill: #3b82f6 !important;
+  stroke: #1d4ed8 !important;
+  stroke-width: 2px !important;
+  cursor: pointer;
+}
+
+/* BOOKED SEATS - Highly visible red to prevent double booking */
+.seat-booked {
+  fill: #dc2626 !important;
+  stroke: #991b1b !important;
+  stroke-width: 2px !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* RESERVED SEATS - Orange for temporary holds */
+.seat-reserved {
+  fill: #ea580c !important;
+  stroke: #c2410c !important;
+  stroke-width: 2px !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* SUBTLE HOVER - Very gentle, no movement to prevent double-click issues */
+.seat-available:hover {
+  stroke-width: 2px !important;
+  filter: brightness(1.1);
+}
+
+/* PREVENT SELECTION DURING INTERACTION */
+.seat-map-svg {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* ACCESSIBILITY IMPROVEMENTS */
+.seat:focus {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* LOADING STATE */
+.seat-loading {
+  fill: #9ca3af;
+  stroke: #6b7280;
+  cursor: wait;
+  pointer-events: none;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 🔥 CRITICAL FIX: SELECTED SEAT STATE - Bright red, obvious */
+.seat-selected {
+  fill: #ef4444 !important;
+  stroke: #dc2626 !important;
+  stroke-width: 2px !important;
+  /* No animations, no pulsing, no movement */
+}
+
+.seat-selected:hover {
+  /* Slight darkening on hover for selected seats */
+  fill: #dc2626 !important;
+  filter: brightness(1.05);
+}
+
+/* 🔥 FIXED: UNAVAILABLE SEATS - Bold red for permanence */
+.seat-booked {
+  fill: #b91c1c !important; /* red-700 - bold and permanent */
+  stroke: #991b1b !important; /* red-800 for contrast */
+  stroke-width: 2px !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.seat-reserved {
+  fill: #9ca3af !important; /* gray for temporary reservations */
+  stroke: #6b7280 !important;
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.seat-booked:hover,
+.seat-reserved:hover {
+  /* No changes on hover for unavailable seats */
+}
+
+/* Removed pulse-glow animation - enterprise design uses subtle, static states */
