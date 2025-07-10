@@ -37,6 +37,9 @@ Thumbs.db
 coverage/
 .nyc_output
 
+# Old/duplicate directories
+lastminutelive/
+
 # Misc
 *.log
 .vercel 

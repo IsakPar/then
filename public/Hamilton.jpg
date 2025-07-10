@@ -1,0 +1,37 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#16213e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f3460;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="title" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffed4e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="400" height="300" fill="url(#bg)"/>
+  
+  <!-- Theater curtains -->
+  <path d="M0,0 Q200,80 400,0 L400,300 L0,300 Z" fill="#2d1b69" opacity="0.3"/>
+  
+  <!-- Spotlight effect -->
+  <ellipse cx="200" cy="150" rx="180" ry="120" fill="url(#title)" opacity="0.1"/>
+  
+  <!-- Title -->
+  <text x="200" y="120" font-family="serif" font-size="48" font-weight="bold" fill="url(#title)" text-anchor="middle">HAMILTON</text>
+  
+  <!-- Subtitle -->
+  <text x="200" y="150" font-family="sans-serif" font-size="14" fill="#ffd700" text-anchor="middle" opacity="0.8">An American Musical</text>
+  
+  <!-- Theater info -->
+  <text x="200" y="200" font-family="sans-serif" font-size="12" fill="#ffffff" text-anchor="middle" opacity="0.6">Victoria Palace Theatre</text>
+  <text x="200" y="220" font-family="sans-serif" font-size="12" fill="#ffffff" text-anchor="middle" opacity="0.6">London West End</text>
+  
+  <!-- Decorative stars -->
+  <text x="50" y="50" font-size="20" fill="#ffd700" opacity="0.4">✨</text>
+  <text x="350" y="70" font-size="16" fill="#ffd700" opacity="0.3">⭐</text>
+  <text x="80" y="250" font-size="18" fill="#ffd700" opacity="0.3">✨</text>
+  <text x="320" y="240" font-size="14" fill="#ffd700" opacity="0.4">⭐</text>
+</svg> 
