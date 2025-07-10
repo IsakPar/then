@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getBookingByValidationCode } from '@/lib/db/queries'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
-})
-
 export async function GET(request: NextRequest) {
   try {
     // Check if Stripe is configured
@@ -16,6 +12,11 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Initialize Stripe client inside the function to avoid build-time errors
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-06-30.basil',
+    })
 
     const { searchParams } = new URL(request.url)
     const sessionId = searchParams.get('session_id')

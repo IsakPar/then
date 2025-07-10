@@ -2,20 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { confirmSeatReservations, getBookingByValidationCode } from '@/lib/db/queries'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
-})
-
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
-
 export async function POST(request: NextRequest) {
   console.log('🔔 Stripe webhook endpoint hit');
 
   // Check webhook secret configuration
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
   if (!endpointSecret) {
     console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
     return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
   }
+
+  // Initialize Stripe client inside the function to avoid build-time errors
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-06-30.basil',
+  })
 
   try {
     const body = await request.text()

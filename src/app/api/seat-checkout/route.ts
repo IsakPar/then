@@ -6,10 +6,6 @@ import Stripe from 'stripe'
 // import { getServerSession } from 'next-auth'
 // import { authOptions } from '@/lib/auth'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil'
-})
-
 export async function POST(request: NextRequest) {
   try {
     // TODO: Require auth - uncomment when NextAuth is implemented
@@ -28,6 +24,11 @@ export async function POST(request: NextRequest) {
       console.error('❌ STRIPE_SECRET_KEY not properly configured');
       return NextResponse.json({ error: 'Payment system not configured' }, { status: 500 });
     }
+
+    // Initialize Stripe client inside the function to avoid build-time errors
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-06-30.basil'
+    })
 
     const body = await request.json();
     console.log('🧾 Incoming checkout request:', body);
