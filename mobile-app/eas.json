@@ -1,0 +1,53 @@
+{
+  "cli": {
+    "version": ">= 3.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m1-medium"
+      },
+      "android": {
+        "buildType": "developmentBuild",
+        "gradleCommand": ":app:assembleDebug"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://localhost:3001",
+        "EXPO_PUBLIC_ENABLE_DEV_MODE": "true",
+        "EXPO_PUBLIC_ENABLE_MOCK_AUTH": "true"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m1-medium"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://then-production.up.railway.app",
+        "EXPO_PUBLIC_ENABLE_DEV_MODE": "false",
+        "EXPO_PUBLIC_ENABLE_MOCK_AUTH": "false"
+      }
+    },
+    "production": {
+      "ios": {
+        "resourceClass": "m1-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://then-production.up.railway.app",
+        "EXPO_PUBLIC_ENABLE_DEV_MODE": "false",
+        "EXPO_PUBLIC_ENABLE_MOCK_AUTH": "false"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+} 

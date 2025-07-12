@@ -207,6 +207,8 @@ class ApiClient {
    */
   async socialAuth(socialData: SocialAuthRequest): Promise<AuthResponse> {
     console.log('🔐 Social login with provider:', socialData.provider);
+    console.log('🔐 Social auth request data:', JSON.stringify(socialData, null, 2));
+    
     try {
       const response = await this.request<AuthResponse>('/api/auth/social', {
         method: 'POST',
@@ -220,6 +222,14 @@ class ApiClient {
       return response;
     } catch (error) {
       console.error('Social auth error:', error);
+      console.error('Social auth request that failed:', JSON.stringify(socialData, null, 2));
+      
+      // Add more detailed error logging
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      
       throw error;
     }
   }
@@ -305,7 +315,22 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Try to get the error message from the response body
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (parseError) {
+          // If we can't parse the error response, use the status text
+          console.warn('Could not parse error response:', parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

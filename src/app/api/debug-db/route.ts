@@ -86,4 +86,130 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    
+    // Check for migration request
+    if (body.action === 'create-auth-tables' && body.confirm === 'lastminutelive-auth-migration') {
+      console.log('🚀 Creating auth tables...');
+      
+      const results = [];
+      
+      // 1. Create users table
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS "users" (
+            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            "name" text,
+            "email" text NOT NULL UNIQUE,
+            "email_verified" timestamp with time zone,
+            "image" text,
+            "password_hash" text,
+            "role" text DEFAULT 'customer' NOT NULL CHECK (role IN ('customer', 'venue', 'admin')),
+            "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+            "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+          );
+        `);
+        
+        await db.execute(sql`
+          CREATE INDEX IF NOT EXISTS "idx_users_email" ON "users" ("email");
+        `);
+        
+        results.push('✅ Users table created');
+      } catch (error) {
+        results.push(`❌ Users table error: ${error}`);
+      }
+      
+      // 2. Create accounts table
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS "accounts" (
+            "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+            "type" text NOT NULL,
+            "provider" text NOT NULL CHECK (provider IN ('email', 'google', 'apple', 'github')),
+            "provider_account_id" text NOT NULL,
+            "refresh_token" text,
+            "access_token" text,
+            "expires_at" integer,
+            "token_type" text,
+            "scope" text,
+            "id_token" text,
+            "session_state" text,
+            "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+            UNIQUE(provider, provider_account_id)
+          );
+        `);
+        
+        await db.execute(sql`
+          CREATE INDEX IF NOT EXISTS "idx_accounts_user" ON "accounts" ("user_id");
+        `);
+        
+        results.push('✅ Accounts table created');
+      } catch (error) {
+        results.push(`❌ Accounts table error: ${error}`);
+      }
+      
+      // 3. Create verification_tokens table
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS "verification_tokens" (
+            "identifier" text NOT NULL,
+            "token" text NOT NULL,
+            "expires" timestamp with time zone NOT NULL,
+            "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+            UNIQUE(identifier, token)
+          );
+        `);
+        
+        await db.execute(sql`
+          CREATE INDEX IF NOT EXISTS "idx_verification_tokens_token" ON "verification_tokens" ("token");
+        `);
+        
+        results.push('✅ Verification tokens table created');
+      } catch (error) {
+        results.push(`❌ Verification tokens error: ${error}`);
+      }
+      
+      // 4. Verify creation
+      const verifyTables = await db.execute(sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name IN ('users', 'accounts', 'verification_tokens')
+        ORDER BY table_name;
+      `);
+      
+      const createdTables = verifyTables.map((row: any) => row.table_name);
+      results.push(`📊 Created tables: ${createdTables.join(', ')}`);
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Auth tables migration completed',
+        results,
+        createdTables,
+        timestamp: new Date().toISOString()
+      });
+      
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Invalid migration request' },
+        { status: 400 }
+      );
+    }
+    
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      }, 
+      { status: 500 }
+    );
+  }
 } 

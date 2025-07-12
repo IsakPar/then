@@ -34,51 +34,68 @@ export interface SocialAuthResult {
 
 class SocialAuthService {
   private isExpoGo: boolean;
+  private isConfigured: boolean = false;
 
   constructor() {
     // Detect if running in Expo Go
     this.isExpoGo = !GoogleSignin || !appleAuth;
     
+    // Configure Google Sign-In if available
     if (!this.isExpoGo && GoogleSignin) {
       this.configureGoogleSignIn();
     }
   }
 
   private configureGoogleSignIn() {
-    if (GoogleSignin) {
+    try {
+      // Get credentials from environment variables
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+      
+      console.log('🔧 Configuring Google Sign-In...');
+      console.log('🔧 Environment check:', {
+        hasWebClientId: !!webClientId,
+        hasIosClientId: !!iosClientId,
+        isExpoGo: this.isExpoGo,
+        platform: Platform.OS
+      });
+
+      if (!webClientId) {
+        console.warn('⚠️ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID not found in environment variables');
+        console.warn('⚠️ Google Sign-In will use mock mode. See ENVIRONMENT_SETUP.md');
+        return;
+      }
+
+      // Configure with proper credentials
       GoogleSignin.configure({
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'your-ios-client-id.apps.googleusercontent.com',
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'your-web-client-id.apps.googleusercontent.com',
+        webClientId: webClientId,
+        iosClientId: iosClientId || undefined,
         offlineAccess: true,
         hostedDomain: '',
         forceCodeForRefreshToken: true,
+        accountName: '',
+        googleServicePlistPath: '',
+        openIdRealm: '',
+        profileImageSize: 120,
       });
+
+      this.isConfigured = true;
+      console.log('✅ Google Sign-In configured successfully');
+      
+    } catch (error) {
+      console.error('❌ Google Sign-In configuration failed:', error);
+      this.isConfigured = false;
     }
   }
 
   async signInWithGoogle(): Promise<SocialAuthResult> {
-    if (this.isExpoGo || !GoogleSignin) {
-      // Simulate successful auth for Expo Go testing
-      console.log('🔵 Simulating Google Sign-In for Expo Go...');
-      
-      // Simulate a more realistic mock user
-      const mockUser = {
-        provider: 'google' as const,
-        idToken: 'mock-id-token-' + Date.now(),
-        accessToken: 'mock-access-token-' + Date.now(),
-        user: {
-          email: 'demo@lastminutelive.com',
-          name: 'Demo User',
-          id: 'mock-google-id-' + Date.now(),
-        },
-      };
-      
-      console.log('🔵 Mock Google Sign-In completed:', mockUser.user.email);
-      return mockUser;
+    // Check if we're in Expo Go or missing configuration
+    if (this.isExpoGo || !GoogleSignin || !this.isConfigured) {
+      return this.simulateGoogleSignIn();
     }
 
     try {
-      console.log('🔵 Starting Google Sign-In...');
+      console.log('🔵 Starting real Google Sign-In...');
       
       // Check if device supports Google Play Services
       await GoogleSignin.hasPlayServices();
@@ -86,14 +103,14 @@ class SocialAuthService {
       // Sign in
       const userInfo = await GoogleSignin.signIn();
       
-      // Access tokens from the response
+      // Get tokens
       const tokens = await GoogleSignin.getTokens();
       
       if (!tokens.idToken) {
         throw new Error('No ID token received from Google');
       }
 
-      console.log('🔵 Google Sign-In successful:', userInfo.data?.user?.email);
+      console.log('🔵 Real Google Sign-In successful:', userInfo.data?.user?.email);
 
       return {
         provider: 'google',
@@ -105,8 +122,9 @@ class SocialAuthService {
           id: userInfo.data?.user?.id || '',
         },
       };
+      
     } catch (error: any) {
-      console.error('🔵 Google Sign-In error:', error);
+      console.error('🔵 Real Google Sign-In error:', error);
       
       if (statusCodes && error.code === statusCodes.SIGN_IN_CANCELLED) {
         throw new Error('Google Sign-In was cancelled');
@@ -120,6 +138,37 @@ class SocialAuthService {
     }
   }
 
+  private simulateGoogleSignIn(): SocialAuthResult {
+    console.log('🔵 Simulating Google Sign-In for development...');
+    
+    // Check if we should connect to local backend for testing
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+    const isLocalBackend = apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1');
+    
+    if (isLocalBackend) {
+      console.log('🔧 Using mock authentication for local development');
+    } else {
+      console.warn('⚠️ Mock authentication detected with production backend!');
+      console.warn('⚠️ This will fail. Please set up real Google OAuth credentials.');
+      console.warn('⚠️ See GOOGLE_OAUTH_SETUP.md and ENVIRONMENT_SETUP.md for instructions.');
+    }
+    
+    // Generate more realistic mock data
+    const mockUser = {
+      provider: 'google' as const,
+      idToken: 'mock-id-token-' + Date.now(),
+      accessToken: 'mock-access-token-' + Date.now(),
+      user: {
+        email: 'demo@lastminutelive.com',
+        name: 'Demo User',
+        id: 'mock-google-id-' + Date.now(),
+      },
+    };
+    
+    console.log('🔵 Mock Google Sign-In completed:', mockUser.user.email);
+    return mockUser;
+  }
+
   async signInWithApple(): Promise<SocialAuthResult> {
     if (Platform.OS !== 'ios') {
       throw new Error('Apple Sign-In is only available on iOS');
@@ -130,11 +179,11 @@ class SocialAuthService {
       console.log('🍎 Simulating Apple Sign-In for Expo Go...');
       return {
         provider: 'apple',
-        idToken: 'mock-apple-id-token',
+        idToken: 'mock-apple-id-token-' + Date.now(),
         user: {
-          email: 'test@icloud.com',
-          name: 'Apple Test User',
-          id: 'mock-apple-id',
+          email: 'demo.apple@lastminutelive.com',
+          name: 'Apple Demo User',
+          id: 'mock-apple-id-' + Date.now(),
         },
       };
     }
@@ -142,7 +191,7 @@ class SocialAuthService {
     try {
       console.log('🍎 Starting Apple Sign-In...');
 
-      // Check if Apple Sign-In is available (use isSupported instead)
+      // Check if Apple Sign-In is available
       if (!appleAuth.isSupported) {
         throw new Error('Apple Sign-In is not available on this device');
       }
@@ -176,21 +225,37 @@ class SocialAuthService {
       };
     } catch (error: any) {
       console.error('🍎 Apple Sign-In error:', error);
-      
-      if (appleAuth && error.code === appleAuth.Error.CANCELED) {
-        throw new Error('Apple Sign-In was cancelled');
-      } else if (appleAuth && error.code === appleAuth.Error.FAILED) {
-        throw new Error('Apple Sign-In failed');
-      } else if (appleAuth && error.code === appleAuth.Error.INVALID_RESPONSE) {
-        throw new Error('Invalid response from Apple Sign-In');
-      } else if (appleAuth && error.code === appleAuth.Error.NOT_HANDLED) {
-        throw new Error('Apple Sign-In not handled');
-      } else if (appleAuth && error.code === appleAuth.Error.UNKNOWN) {
-        throw new Error('Unknown Apple Sign-In error');
-      } else {
-        throw new Error('Apple Sign-In failed');
-      }
+      throw new Error('Apple Sign-In failed: ' + (error.message || 'Unknown error'));
     }
+  }
+
+  convertToApiRequest(result: SocialAuthResult): SocialAuthRequest {
+    console.log('🔄 Converting social auth result to API request:', {
+      provider: result.provider,
+      hasIdToken: !!result.idToken,
+      hasAccessToken: !!result.accessToken,
+      userEmail: result.user.email
+    });
+
+    const apiRequest: SocialAuthRequest = {
+      provider: result.provider,
+      idToken: result.idToken,
+      accessToken: result.accessToken,
+      user: {
+        email: result.user.email,
+        name: result.user.name,
+        id: result.user.id,
+      },
+    };
+
+    console.log('🔄 Converted API request:', {
+      provider: apiRequest.provider,
+      hasIdToken: !!apiRequest.idToken,
+      hasAccessToken: !!apiRequest.accessToken,
+      userEmail: apiRequest.user.email
+    });
+
+    return apiRequest;
   }
 
   async signOut() {
@@ -201,7 +266,7 @@ class SocialAuthService {
 
     try {
       // Sign out from Google
-      if (GoogleSignin) {
+      if (GoogleSignin && this.isConfigured) {
         const currentUser = await GoogleSignin.getCurrentUser();
         if (currentUser) {
           await GoogleSignin.signOut();
@@ -220,25 +285,19 @@ class SocialAuthService {
     }
   }
 
-  /**
-   * Convert social auth result to API request format
-   */
-  convertToApiRequest(result: SocialAuthResult): SocialAuthRequest {
+  // Helper method to check configuration status
+  getConfigurationStatus() {
     return {
-      provider: result.provider,
-      idToken: result.idToken,
-      accessToken: result.accessToken,
-      user: result.user,
+      isExpoGo: this.isExpoGo,
+      isConfigured: this.isConfigured,
+      hasWebClientId: !!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      hasIosClientId: !!process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      platform: Platform.OS,
+      apiUrl: process.env.EXPO_PUBLIC_API_URL,
     };
-  }
-
-  /**
-   * Check if running in Expo Go (for development)
-   */
-  isRunningInExpoGo(): boolean {
-    return this.isExpoGo;
   }
 }
 
+// Export singleton instance
 export const socialAuthService = new SocialAuthService();
 export default socialAuthService; 

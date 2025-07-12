@@ -13,10 +13,23 @@
       "resizeMode": "contain",
       "backgroundColor": "#1F2937"
     },
+    "plugins": [
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID"
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "icon": "./assets/lml-appstore.png",
-      "bundleIdentifier": "com.isakpar.lastminutelive"
+      "bundleIdentifier": "com.isakpar.lastminutelive",
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID"
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,13 +38,22 @@
       },
       "edgeToEdgeEnabled": true,
       "icon": "./assets/lml-appstore.png",
-      "package": "com.isakpar.lastminutelive"
+      "package": "com.isakpar.lastminutelive",
+      "config": {
+        "googleSignIn": {
+          "apiKey": "YOUR_ANDROID_API_KEY",
+          "certificateHash": "YOUR_SHA1_FINGERPRINT"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/lml-appstore.png"
     },
     "extra": {
-      "apiUrl": "https://then-production.up.railway.app"
+      "apiUrl": "https://then-production.up.railway.app",
+      "eas": {
+        "projectId": "your-expo-project-id"
+      }
     }
   }
 }

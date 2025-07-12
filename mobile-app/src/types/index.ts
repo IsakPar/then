@@ -239,7 +239,7 @@ export interface SocialAuthRequest {
   provider: 'google' | 'apple';
   idToken: string;
   accessToken?: string;
-  user?: {
+  user: {
     email: string;
     name?: string;
     id: string;
