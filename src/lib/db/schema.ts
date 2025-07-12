@@ -32,6 +32,96 @@ export const bookingStatusEnum = pgEnum('booking_status', [
   'expired'
 ]);
 
+export const authProviderEnum = pgEnum('auth_provider', [
+  'email',
+  'google',
+  'apple',
+  'github'
+]);
+
+export const userRoleEnum = pgEnum('user_role', [
+  'customer',
+  'admin',
+  'venue'
+]);
+
+// ============================================================================
+// AUTH TABLES (NextAuth.js compatible)
+// ============================================================================
+
+// Users table - main user records
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name'),
+  email: text('email').notNull().unique(),
+  emailVerified: timestamp('email_verified', { withTimezone: true }),
+  image: text('image'),
+  passwordHash: text('password_hash'), // For email/password authentication
+  role: userRoleEnum('role').default('customer').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  emailIndex: index('idx_users_email').on(table.email),
+}));
+
+// Accounts table - OAuth provider accounts linked to users
+export const accounts = pgTable('accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'oauth' | 'email' | 'credentials'
+  provider: authProviderEnum('provider').notNull(),
+  providerAccountId: text('provider_account_id').notNull(),
+  refresh_token: text('refresh_token'),
+  access_token: text('access_token'),
+  expires_at: integer('expires_at'),
+  token_type: text('token_type'),
+  scope: text('scope'),
+  id_token: text('id_token'),
+  session_state: text('session_state'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueProvider: unique().on(table.provider, table.providerAccountId),
+  userIndex: index('idx_accounts_user').on(table.userId),
+}));
+
+// Sessions table - active user sessions
+export const sessions = pgTable('sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionToken: text('session_token').notNull().unique(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expires: timestamp('expires', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  sessionTokenIndex: index('idx_sessions_token').on(table.sessionToken),
+  userIndex: index('idx_sessions_user').on(table.userId),
+  expiresIndex: index('idx_sessions_expires').on(table.expires),
+}));
+
+// Verification tokens table - for email verification, password reset, etc.
+export const verificationTokens = pgTable('verification_tokens', {
+  identifier: text('identifier').notNull(), // email address
+  token: text('token').notNull(),
+  expires: timestamp('expires', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  compositePrimary: unique().on(table.identifier, table.token),
+  tokenIndex: index('idx_verification_tokens_token').on(table.token),
+  expiresIndex: index('idx_verification_tokens_expires').on(table.expires),
+}));
+
+// User-Venue linking table - for venue staff management
+export const userVenues = pgTable('user_venues', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  venueId: uuid('venue_id').notNull().references(() => venues.id, { onDelete: 'cascade' }),
+  role: text('role').notNull().default('manager'), // 'manager' | 'staff'
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserVenue: unique().on(table.userId, table.venueId),
+  userIndex: index('idx_user_venues_user_id').on(table.userId),
+  venueIndex: index('idx_user_venues_venue_id').on(table.venueId),
+}));
+
 // ============================================================================
 // CORE TABLES
 // ============================================================================
@@ -132,6 +222,7 @@ export const reservations = pgTable('reservations', {
 export const bookings = pgTable('bookings', {
   id: uuid('id').primaryKey().defaultRandom(),
   showId: uuid('show_id').notNull().references(() => shows.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }), // Link to authenticated user (optional for guest bookings)
   customerName: text('customer_name').notNull(),
   customerEmail: text('customer_email').notNull(),
   customerPhone: text('customer_phone'),
@@ -163,6 +254,7 @@ export const bookingSeats = pgTable('booking_seats', {
 
 export const venuesRelations = relations(venues, ({ many, one }) => ({
   shows: many(shows),
+  userVenues: many(userVenues), // Staff who can manage this venue
   defaultSeatMap: one(seatMaps, {
     fields: [venues.defaultSeatMapId],
     references: [seatMaps.id],
@@ -220,6 +312,10 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
     fields: [bookings.showId],
     references: [shows.id],
   }),
+  user: one(users, {
+    fields: [bookings.userId],
+    references: [users.id],
+  }),
   bookingSeats: many(bookingSeats),
 }));
 
@@ -231,6 +327,42 @@ export const bookingSeatsRelations = relations(bookingSeats, ({ one }) => ({
   seat: one(seats, {
     fields: [bookingSeats.seatId],
     references: [seats.id],
+  }),
+}));
+
+// ============================================================================
+// AUTH RELATIONS
+// ============================================================================
+
+export const usersRelations = relations(users, ({ many }) => ({
+  accounts: many(accounts),
+  sessions: many(sessions),
+  bookings: many(bookings),
+  userVenues: many(userVenues), // Venues this user can manage
+}));
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userVenuesRelations = relations(userVenues, ({ one }) => ({
+  user: one(users, {
+    fields: [userVenues.userId],
+    references: [users.id],
+  }),
+  venue: one(venues, {
+    fields: [userVenues.venueId],
+    references: [venues.id],
   }),
 }));
 
@@ -263,3 +395,22 @@ export type BookingStatus = typeof bookings.status.enumValues[number];
 
 export type BookingSeat = typeof bookingSeats.$inferSelect;
 export type NewBookingSeat = typeof bookingSeats.$inferInsert; 
+
+// Auth types
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+
+export type VerificationToken = typeof verificationTokens.$inferSelect;
+export type NewVerificationToken = typeof verificationTokens.$inferInsert;
+
+export type UserVenue = typeof userVenues.$inferSelect;
+export type NewUserVenue = typeof userVenues.$inferInsert;
+
+export type AuthProvider = typeof accounts.provider.enumValues[number];
+export type UserRole = typeof users.role.enumValues[number]; 

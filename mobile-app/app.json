@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Last Minute Live",
+    "slug": "last-minute-live",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/lml-appstore.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "lastminutelive",
+    "splash": {
+      "image": "./assets/lml-appstore.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1F2937"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "icon": "./assets/lml-appstore.png"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/lml-appstore.png",
+        "backgroundColor": "#F7D92A"
+      },
+      "edgeToEdgeEnabled": true,
+      "icon": "./assets/lml-appstore.png"
+    },
+    "web": {
+      "favicon": "./assets/lml-appstore.png"
+    },
+    "extra": {
+      "apiUrl": "https://then-production.up.railway.app"
+    }
+  }
+}

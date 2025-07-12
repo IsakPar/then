@@ -19,7 +19,9 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
     "plugins": [
       {
@@ -36,6 +38,7 @@
   "exclude": [
     "node_modules",
     "lastminutelive",
+    "mobile-app",
     "**/* 2.*"
   ]
 }

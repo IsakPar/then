@@ -70,7 +70,21 @@ export async function GET(request: NextRequest) {
           // First try to find existing booking by payment intent
           const bookingResult = await db
             .select({
-              booking: bookings,
+              booking: {
+                id: bookings.id,
+                showId: bookings.showId,
+                customerName: bookings.customerName,
+                customerEmail: bookings.customerEmail,
+                customerPhone: bookings.customerPhone,
+                status: bookings.status,
+                totalAmountPence: bookings.totalAmountPence,
+                validationCode: bookings.validationCode,
+                stripePaymentIntentId: bookings.stripePaymentIntentId,
+                stripeCheckoutSessionId: bookings.stripeCheckoutSessionId,
+                notes: bookings.notes,
+                createdAt: bookings.createdAt,
+                updatedAt: bookings.updatedAt,
+              },
               show: shows,
               venue: venues,
             })
@@ -118,7 +132,21 @@ export async function GET(request: NextRequest) {
                 // Now fetch the newly created booking details
                 const newBookingResult = await db
                   .select({
-                    booking: bookings,
+                    booking: {
+                      id: bookings.id,
+                      showId: bookings.showId,
+                      customerName: bookings.customerName,
+                      customerEmail: bookings.customerEmail,
+                      customerPhone: bookings.customerPhone,
+                      status: bookings.status,
+                      totalAmountPence: bookings.totalAmountPence,
+                      validationCode: bookings.validationCode,
+                      stripePaymentIntentId: bookings.stripePaymentIntentId,
+                      stripeCheckoutSessionId: bookings.stripeCheckoutSessionId,
+                      notes: bookings.notes,
+                      createdAt: bookings.createdAt,
+                      updatedAt: bookings.updatedAt,
+                    },
                     show: shows,
                     venue: venues,
                   })
@@ -175,7 +203,21 @@ export async function GET(request: NextRequest) {
               
               const retryBookingResult = await db
                 .select({
-                  booking: bookings,
+                  booking: {
+                    id: bookings.id,
+                    showId: bookings.showId,
+                    customerName: bookings.customerName,
+                    customerEmail: bookings.customerEmail,
+                    customerPhone: bookings.customerPhone,
+                    status: bookings.status,
+                    totalAmountPence: bookings.totalAmountPence,
+                    validationCode: bookings.validationCode,
+                    stripePaymentIntentId: bookings.stripePaymentIntentId,
+                    stripeCheckoutSessionId: bookings.stripeCheckoutSessionId,
+                    notes: bookings.notes,
+                    createdAt: bookings.createdAt,
+                    updatedAt: bookings.updatedAt,
+                  },
                   show: shows,
                   venue: venues,
                 })

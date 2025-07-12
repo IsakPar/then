@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession, signOut } from 'next-auth/react'
+import Link from 'next/link'
 import BuyButton from '@/components/BuyButton'
 
 interface SeatPricing {
@@ -29,6 +31,7 @@ interface Show {
 }
 
 export default function HomePage() {
+  const { data: session, status } = useSession()
   const [shows, setShows] = useState<Show[]>([])
   const [loading, setLoading] = useState(true)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
@@ -293,6 +296,61 @@ export default function HomePage() {
       </div>
       
       <div className="relative z-10 max-w-7xl mx-auto px-4">
+        {/* Account Section */}
+        <div className="flex justify-end pt-6 mb-4">
+          {status === 'loading' ? (
+            <div className="animate-pulse">
+              <div className="h-10 w-32 bg-white/20 rounded-lg"></div>
+            </div>
+          ) : session ? (
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/10 backdrop-blur-lg rounded-2xl px-6 py-3 border border-white/20">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">
+                      {session.user?.name ? session.user.name[0].toUpperCase() : session.user?.email?.[0].toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">
+                      Welcome back, {session.user?.name || session.user?.email?.split('@')[0] || 'User'}!
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Link 
+                  href="/account" 
+                  className="bg-white/10 backdrop-blur-lg rounded-xl px-4 py-2 border border-white/20 text-white hover:bg-white/20 transition-colors font-medium text-sm"
+                >
+                  My Tickets
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="bg-white/10 backdrop-blur-lg rounded-xl px-4 py-2 border border-white/20 text-white hover:bg-white/20 transition-colors font-medium text-sm"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex space-x-3">
+              <Link 
+                href="/auth/signin" 
+                className="bg-white/10 backdrop-blur-lg rounded-xl px-4 py-2 border border-white/20 text-white hover:bg-white/20 transition-colors font-medium text-sm"
+              >
+                Sign In
+              </Link>
+              <Link 
+                href="/auth/signup" 
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium px-4 py-2 rounded-xl transition-all duration-200 text-sm"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
+        </div>
+
         {/* Header */}
         <header className="text-center mb-8 -mt-48">
           {/* Logo */}

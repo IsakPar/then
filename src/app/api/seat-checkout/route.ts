@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('🧾 Incoming checkout request:', body);
     
-    const { showId, specificSeatIds } = body;
+    const { showId, specificSeatIds, urlScheme } = body;
     
     if (!showId) {
       console.error('❌ Missing showId in request');
@@ -80,6 +80,30 @@ export async function POST(request: NextRequest) {
     // This is a simplified calculation, you might want to fetch actual seat prices
     const totalAmount = specificSeatIds.length * showData.min_price * 100; // Convert to pence
 
+    // Check if request is from mobile app
+    const userAgent = request.headers.get('user-agent') || '';
+    const isMobileApp = userAgent.includes('Expo') || userAgent.includes('ReactNative') || 
+                       request.headers.get('x-mobile-app') === 'true' || !!urlScheme;
+    
+    console.log('📱 Mobile app detection:', { userAgent, isMobileApp, urlScheme });
+    
+    // Set URLs based on client type
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+    let successUrl, cancelUrl;
+    
+    if (isMobileApp) {
+      // For mobile app using WebView, use web URLs that can be detected by JavaScript injection
+      // These will be detected by the WebView's navigation state change and JavaScript injection
+      successUrl = `${baseUrl}/payment/webview/success?session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${baseUrl}/payment/webview/cancel?show_id=${showId}`;
+    } else {
+      // Web URLs for regular web usage
+      successUrl = `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${baseUrl}/show/${showId}/seats`;
+    }
+    
+    console.log('🔗 Payment URLs:', { successUrl, cancelUrl });
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -95,12 +119,13 @@ export async function POST(request: NextRequest) {
         quantity: specificSeatIds.length,
       }],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/show/${showId}/seats`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         reservation_session_token: sessionToken,
         show_id: showId,
         seat_ids: specificSeatIds.join(','),
+        client_type: isMobileApp ? 'mobile' : 'web',
       },
       expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes (Stripe minimum)
     });

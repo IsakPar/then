@@ -569,13 +569,15 @@ export async function confirmSeatReservations(
   reservationId: string,
   customerEmail: string,
   customerName: string,
-  stripePaymentIntentId: string
+  stripePaymentIntentId: string,
+  userId?: string | null
 ) {
   console.log(`🎫 confirmSeatReservations called with:`, {
     reservationId,
     customerEmail,
     customerName,
-    stripePaymentIntentId
+    stripePaymentIntentId,
+    userId
   });
 
   return await db.transaction(async (tx) => {
@@ -599,6 +601,29 @@ export async function confirmSeatReservations(
         return [{ success: false, message: 'No reserved seats found' }];
       }
 
+      // Step 1.5: If no userId provided, try to find user by email
+      let finalUserId = userId;
+      if (!finalUserId && customerEmail) {
+        console.log(`🎫 Step 1.5: Looking up user by email: ${customerEmail}`);
+        try {
+          const { users } = await import('./schema');
+          const userResult = await tx
+            .select({ id: users.id })
+            .from(users)
+            .where(eq(users.email, customerEmail))
+            .limit(1);
+          
+          if (userResult.length > 0) {
+            finalUserId = userResult[0].id;
+            console.log(`🎫 Step 1.5 Result: Found user ${finalUserId} for email ${customerEmail}`);
+          } else {
+            console.log(`🎫 Step 1.5 Result: No user found for email ${customerEmail}, creating guest booking`);
+          }
+        } catch (userLookupError) {
+          console.log(`🎫 Step 1.5 Error: Failed to lookup user, proceeding as guest:`, userLookupError);
+        }
+      }
+
       console.log(`🎫 Step 2: Creating booking for ${reservedSeats.length} seats`);
 
       // Create booking - let database auto-generate the ID
@@ -608,6 +633,7 @@ export async function confirmSeatReservations(
 
       const bookingData = {
         showId: reservedSeats[0].seat.showId,
+        userId: finalUserId || null,
         customerEmail,
         customerName,
         validationCode,
@@ -661,6 +687,61 @@ export async function confirmSeatReservations(
         .returning();
 
       console.log(`🎫 Step 4 Result: Deleted ${deletedReservations.length} reservations`);
+
+      console.log(`🎫 Step 5: Sending booking confirmation email`);
+
+      // Send booking confirmation email
+      try {
+        // Get show and venue details for email
+        const showDetails = await tx
+          .select({
+            show: shows,
+            venue: venues,
+          })
+          .from(shows)
+          .innerJoin(venues, eq(shows.venueId, venues.id))
+          .where(eq(shows.id, reservedSeats[0].seat.showId))
+          .limit(1);
+
+        if (showDetails.length > 0) {
+          const { show, venue } = showDetails[0];
+          
+          // Format seat information
+          const seatInfo = reservedSeats.map(rs => 
+            `${rs.seat.rowLetter}${rs.seat.seatNumber}`
+          ).join(', ');
+
+          // Format show date and time
+          const showDate = show.date ? new Date(show.date).toLocaleDateString('en-GB') : 'TBA';
+          const showTime = show.time || '19:30';
+
+          // Import email service
+          const { emailService } = await import('../email');
+          
+          // Send booking confirmation email
+          const emailSent = await emailService.sendBookingConfirmation(
+            customerEmail,
+            customerName,
+            show.title,
+            showDate,
+            showTime,
+            venue.name,
+            validationCode,
+            seatInfo
+          );
+
+          if (emailSent) {
+            console.log(`📧 Booking confirmation email sent successfully to ${customerEmail}`);
+          } else {
+            console.log(`⚠️ Failed to send booking confirmation email to ${customerEmail}`);
+          }
+        } else {
+          console.log(`⚠️ Could not find show details for booking confirmation email`);
+        }
+      } catch (emailError) {
+        console.error(`💥 Error sending booking confirmation email:`, emailError);
+        // Don't fail the entire booking process if email fails
+      }
 
       const result = {
         success: true,
