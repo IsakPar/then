@@ -25,6 +25,7 @@ export type RootStackParamList = {
     showId?: string; // Make optional for URL param handling
   };
   Tickets: undefined;
+  Account: undefined;
 };
 
 // Navigation prop types for each screen
@@ -71,4 +72,9 @@ export type PaymentCancelScreenProps = {
 export type TicketsScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, 'Tickets'>;
   route: RouteProp<RootStackParamList, 'Tickets'>;
+};
+
+export type AccountScreenProps = {
+  navigation: StackNavigationProp<RootStackParamList, 'Account'>;
+  route: RouteProp<RootStackParamList, 'Account'>;
 }; 

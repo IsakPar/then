@@ -61,42 +61,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setActiveTab(tab);
     
     if (tab === 'account') {
-      if (authState.isAuthenticated) {
-        // Show account options for authenticated users
-        Alert.alert(
-          'Account',
-          `Welcome, ${authState.user?.name || authState.user?.email}!`,
-          [
-            { text: 'My Bookings', onPress: () => handleMyBookings() },
-            { text: 'Logout', onPress: () => handleLogout(), style: 'destructive' },
-            { text: 'Cancel', style: 'cancel' },
-          ]
-        );
-      } else {
-        // Show login options for non-authenticated users
-        Alert.alert(
-          'Account',
-          'Sign in to view your bookings and manage your account.',
-          [
-            { text: 'Sign In', onPress: () => navigation.navigate('Login') },
-            { text: 'Create Account', onPress: () => navigation.navigate('Signup') },
-            { text: 'Cancel', style: 'cancel' },
-          ]
-        );
-      }
+      // Navigate directly to Account screen
+      navigation.navigate('Account');
     } else if (tab === 'tickets') {
-      if (authState.isAuthenticated) {
-        handleMyBookings();
-      } else {
-        Alert.alert(
-          'My Tickets',
-          'Sign in to view your ticket bookings.',
-          [
-            { text: 'Sign In', onPress: () => navigation.navigate('Login') },
-            { text: 'Cancel', style: 'cancel' },
-          ]
-        );
-      }
+      // Navigate directly to Tickets screen
+      navigation.navigate('Tickets');
     }
   };
 

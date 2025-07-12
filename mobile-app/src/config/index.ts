@@ -6,7 +6,7 @@
 export const config = {
   // API Configuration
   api: {
-    baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://then-production.up.railway.app',
+    baseUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001',
     timeout: 10000, // 10 seconds
   },
 

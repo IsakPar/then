@@ -297,6 +297,30 @@ See you at the show!`;
     );
   };
 
+  const renderUnauthenticatedState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="person-circle-outline" size={64} color="#3B82F6" />
+      <Text style={styles.emptyTitle}>Please log in or sign up to see your tickets stored</Text>
+      <Text style={styles.emptyMessage}>
+        Sign in to view your ticket bookings and manage your reservations.
+      </Text>
+      <View style={styles.authButtons}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate('Login')}
+        >
+          <Text style={styles.primaryButtonText}>Sign In</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate('Signup')}
+        >
+          <Text style={styles.secondaryButtonText}>Create Account</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="ticket-outline" size={64} color="#6B7280" />
@@ -377,7 +401,9 @@ See you at the show!`;
         </View>
 
         {/* Content */}
-        {error ? (
+        {!authState.isAuthenticated ? (
+          renderUnauthenticatedState()
+        ) : error ? (
           renderErrorState()
         ) : tickets.length === 0 ? (
           renderEmptyState()
@@ -744,6 +770,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  authButtons: {
+    width: '100%',
+    maxWidth: 300,
+  },
+  primaryButton: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#3B82F6',
+    fontSize: 16,
+    fontWeight: '600',
   },
   // Modal styles
   modalOverlay: {

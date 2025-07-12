@@ -5,9 +5,14 @@ let mailjet: Mailjet | null = null;
 
 function getMailjetClient(): Mailjet {
   if (!mailjet) {
+    // Throw error if keys are not configured
+    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
+      throw new Error('Mailjet API_KEY and SECRET_KEY are required for email sending');
+    }
+    
     mailjet = new Mailjet({
-      apiKey: process.env.MAILJET_API_KEY || '',
-      apiSecret: process.env.MAILJET_SECRET_KEY || '',
+      apiKey: process.env.MAILJET_API_KEY,
+      apiSecret: process.env.MAILJET_SECRET_KEY,
     });
   }
   return mailjet;

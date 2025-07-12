@@ -60,16 +60,21 @@ class SocialAuthService {
     if (this.isExpoGo || !GoogleSignin) {
       // Simulate successful auth for Expo Go testing
       console.log('🔵 Simulating Google Sign-In for Expo Go...');
-      return {
-        provider: 'google',
-        idToken: 'mock-id-token',
-        accessToken: 'mock-access-token',
+      
+      // Simulate a more realistic mock user
+      const mockUser = {
+        provider: 'google' as const,
+        idToken: 'mock-id-token-' + Date.now(),
+        accessToken: 'mock-access-token-' + Date.now(),
         user: {
-          email: 'test@example.com',
-          name: 'Test User',
-          id: 'mock-google-id',
+          email: 'demo@lastminutelive.com',
+          name: 'Demo User',
+          id: 'mock-google-id-' + Date.now(),
         },
       };
+      
+      console.log('🔵 Mock Google Sign-In completed:', mockUser.user.email);
+      return mockUser;
     }
 
     try {
@@ -110,7 +115,7 @@ class SocialAuthService {
       } else if (statusCodes && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         throw new Error('Google Play Services not available');
       } else {
-        throw new Error('Google Sign-In failed');
+        throw new Error('Google Sign-In failed: ' + (error.message || 'Unknown error'));
       }
     }
   }

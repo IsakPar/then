@@ -45,9 +45,30 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
     }
 
     // Parse and validate request body
-    const body: SocialAuthRequest = await request.json();
+    let body: SocialAuthRequest;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Invalid request format' 
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log('📱 Social auth request received:', {
+      provider: body.provider,
+      hasIdToken: !!body.idToken,
+      hasUser: !!body.user,
+      userEmail: body.user?.email,
+      isDevelopment: process.env.NODE_ENV === 'development'
+    });
     
     if (!body.provider || !body.idToken) {
+      console.error('Missing required fields - provider:', body.provider, 'idToken:', !!body.idToken);
       return NextResponse.json(
         { 
           success: false, 
@@ -58,6 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
     }
 
     if (!['google', 'apple'].includes(body.provider)) {
+      console.error('Unsupported provider:', body.provider);
       return NextResponse.json(
         { 
           success: false, 
@@ -69,6 +91,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
 
     // Validate and extract user data from social auth request
     if (!body.user?.email) {
+      console.error('Missing user email:', body.user);
       return NextResponse.json(
         { 
           success: false, 
@@ -83,8 +106,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
     const name = ValidationUtils.sanitizeInput(body.user.name || email.split('@')[0]);
     const socialUserId = ValidationUtils.sanitizeInput(body.user.id || '');
 
+    console.log('📱 Processing social auth for:', { email, name, provider: body.provider });
+
     // Validate email format
     if (!ValidationUtils.isValidEmail(email)) {
+      console.error('Invalid email format:', email);
       return NextResponse.json(
         { 
           success: false, 
@@ -94,11 +120,20 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
       );
     }
 
-    // TODO: Verify the idToken with the respective provider (Google/Apple)
-    // For now, we'll trust the token since it comes from our own mobile app
-    // In production, you should verify:
-    // - Google: Verify JWT with Google's public keys
-    // - Apple: Verify JWT with Apple's public keys
+    // In development mode, allow mock tokens for testing
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isMockToken = body.idToken.startsWith('mock-');
+    
+    if (isDevelopment && isMockToken) {
+      console.log('🔧 Development mode: Accepting mock token for testing');
+    } else {
+      // TODO: Verify the idToken with the respective provider (Google/Apple)
+      // For now, we'll trust the token since it comes from our own mobile app
+      // In production, you should verify:
+      // - Google: Verify JWT with Google's public keys
+      // - Apple: Verify JWT with Apple's public keys
+      console.log('🔧 Production mode: Token verification not implemented yet');
+    }
 
     // Check if user exists or create new user
     let user = await AuthUtils.findUserByEmail(email);
@@ -108,6 +143,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
       user = await AuthUtils.createUser(email, '', name, 'customer');
       
       if (!user) {
+        console.error('Failed to create user:', email);
         return NextResponse.json(
           { 
             success: false, 
@@ -129,6 +165,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
     // Generate JWT token using SignJWT
     const token = await new SignJWT({
       sub: user.id,
+      userId: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
@@ -136,7 +173,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')
+      .setIssuer('lastminutelive')
+      .setAudience('lastminutelive-mobile')
       .sign(JWT_SECRET);
+
+    console.log('✅ Social auth successful for:', email);
 
     // Return success response
     return NextResponse.json({

@@ -18,6 +18,7 @@ import PaymentWebViewScreen from './src/screens/PaymentWebViewScreen';
 import PaymentSuccessScreen from './src/screens/PaymentSuccessScreen';
 import PaymentCancelScreen from './src/screens/PaymentCancelScreen';
 import TicketsScreen from './src/screens/TicketsScreen';
+import AccountScreen from './src/screens/AccountScreen';
 import { RootStackParamList } from './src/types/navigation';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -95,6 +96,7 @@ function AppNavigation() {
         <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
         <Stack.Screen name="PaymentCancel" component={PaymentCancelScreen} />
         <Stack.Screen name="Tickets" component={TicketsScreen} />
+        <Stack.Screen name="Account" component={AccountScreen} />
         
         {/* Auth screens - available when not authenticated */}
         <Stack.Screen name="Login" component={LoginScreen} />
