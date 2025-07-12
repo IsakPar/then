@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AuthUtils, ValidationUtils, RateLimitUtils } from '@/lib/auth-utils'
 import { SignJWT } from 'jose'
 import { OAuth2Client } from 'google-auth-library'
-import jwt from 'jsonwebtoken'
-import crypto from 'crypto'
+import { randomBytes } from 'crypto'
 
 // Types for social auth
 interface SocialAuthRequest {
@@ -201,7 +200,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
        } else {
          console.log('👤 Creating new user...');
          
-         dbUser = await AuthUtils.createUser(body.user.email, crypto.randomBytes(32).toString('hex'), body.user.name || body.user.email.split('@')[0], 'customer');
+         dbUser = await AuthUtils.createUser(body.user.email, randomBytes(32).toString('hex'), body.user.name || body.user.email.split('@')[0], 'customer');
          console.log(`✅ Created new ${body.provider} user:`, dbUser.email);
        }
 
@@ -259,101 +258,4 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
   }
 }
 
-/**
- * Verify Google ID token
- */
-async function verifyGoogleToken(idToken: string, expectedEmail: string): Promise<void> {
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    throw new Error('GOOGLE_CLIENT_ID environment variable is required');
-  }
-
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-  
-  try {
-    const ticket = await client.verifyIdToken({
-      idToken: idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    
-    if (!payload) {
-      throw new Error('Invalid Google token payload');
-    }
-
-    // Verify the email matches what was sent
-    if (payload.email !== expectedEmail) {
-      throw new Error('Token email does not match provided email');
-    }
-
-    // Verify the token is not expired
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      throw new Error('Google token has expired');
-    }
-
-    // Additional security checks
-    if (!payload.email_verified) {
-      throw new Error('Google email not verified');
-    }
-
-  } catch (error) {
-    console.error('Google token verification failed:', error);
-    throw error;
-  }
-}
-
-/**
- * Verify Apple ID token
- */
-async function verifyAppleToken(idToken: string, expectedEmail: string): Promise<void> {
-  if (!process.env.APPLE_TEAM_ID || !process.env.APPLE_KEY_ID) {
-    throw new Error('Apple Sign-In environment variables are required');
-  }
-
-  try {
-    // Decode the token header to get the key ID
-    const decodedHeader = jwt.decode(idToken, { complete: true });
-    
-    if (!decodedHeader || !decodedHeader.header.kid) {
-      throw new Error('Invalid Apple token header');
-    }
-
-    // For now, we'll do basic JWT validation
-    // In a full production setup, you would:
-    // 1. Fetch Apple's public keys from https://appleid.apple.com/auth/keys
-    // 2. Verify the signature using the appropriate public key
-    // 3. Validate all claims
-    
-    const decoded = jwt.decode(idToken, { complete: true });
-    
-    if (!decoded || !decoded.payload) {
-      throw new Error('Invalid Apple token');
-    }
-
-    const payload = decoded.payload as any;
-
-    // Basic validation
-    if (payload.email && payload.email !== expectedEmail) {
-      throw new Error('Token email does not match provided email');
-    }
-
-    // Verify audience (should be your app's bundle ID)
-    // You might want to add APPLE_CLIENT_ID to env vars
-    
-    // Verify expiration
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      throw new Error('Apple token has expired');
-    }
-
-    // Verify issuer
-    if (payload.iss !== 'https://appleid.apple.com') {
-      throw new Error('Invalid Apple token issuer');
-    }
-
-  } catch (error) {
-    console.error('Apple token verification failed:', error);
-    throw error;
-  }
-} 
+ 
