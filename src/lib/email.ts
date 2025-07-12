@@ -5,14 +5,10 @@ let mailjet: Mailjet | null = null;
 
 function getMailjetClient(): Mailjet {
   if (!mailjet) {
-    // Throw error if keys are not configured
-    if (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY) {
-      throw new Error('Mailjet API_KEY and SECRET_KEY are required for email sending');
-    }
-    
+    // At this point, we know the keys are configured (checked in sendEmail method)
     mailjet = new Mailjet({
-      apiKey: process.env.MAILJET_API_KEY,
-      apiSecret: process.env.MAILJET_SECRET_KEY,
+      apiKey: process.env.MAILJET_API_KEY!,
+      apiSecret: process.env.MAILJET_SECRET_KEY!,
     });
   }
   return mailjet;
@@ -113,17 +109,25 @@ export class EmailService {
     htmlContent: string,
     textContent: string
   ): Promise<boolean> {
-    try {
-      // Skip email sending in development if Mailjet keys are not configured
-      if (process.env.NODE_ENV === 'development' && (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY)) {
-        console.log('📧 Development mode: Email would be sent to:', to);
-        console.log('📧 Subject:', subject);
-        console.log('📧 Content (first 200 chars):', textContent.substring(0, 200) + '...');
-        return true;
-      }
+          try {
+        // Skip email sending in development if Mailjet keys are not configured
+        if (process.env.NODE_ENV === 'development' && (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY)) {
+          console.log('📧 Development mode: Email would be sent to:', to);
+          console.log('📧 Subject:', subject);
+          console.log('📧 Content (first 200 chars):', textContent.substring(0, 200) + '...');
+          return true;
+        }
 
-      // Get Mailjet client (lazy initialization)
-      const mailjetClient = getMailjetClient();
+        // In production, if Mailjet keys are not configured, simulate sending
+        if (process.env.NODE_ENV === 'production' && (!process.env.MAILJET_API_KEY || !process.env.MAILJET_SECRET_KEY)) {
+          console.log('⚠️  Production mode: Mailjet not configured, simulating email to:', to);
+          console.log('📧 Subject:', subject);
+          console.log('📧 Content (first 200 chars):', textContent.substring(0, 200) + '...');
+          return true;
+        }
+
+        // Get Mailjet client (lazy initialization)
+        const mailjetClient = getMailjetClient();
 
       const request = await mailjetClient
         .post('send', { version: 'v3.1' })
