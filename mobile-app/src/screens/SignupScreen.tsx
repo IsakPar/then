@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons, AntDesign } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { SignupScreenProps } from '../types/navigation';
 import socialAuthService from '../lib/socialAuth';
@@ -106,19 +107,8 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
       const result = await socialAuthService.signInWithGoogle();
       const request = socialAuthService.convertToApiRequest(result);
       
-      if (isExpoGo) {
-        Alert.alert(
-          'Demo Mode',
-          'This is a demo of Google Sign-Up. In production, this would create an account with Google.',
-          [{ text: 'Continue Demo', onPress: async () => {
-            await socialAuth(request);
-            Alert.alert('Success', 'Demo Google account created!');
-          }}, { text: 'Cancel', style: 'cancel' }]
-        );
-      } else {
-        await socialAuth(request);
-        Alert.alert('Success', 'Welcome! Your account has been created with Google.');
-      }
+      await socialAuth(request);
+      Alert.alert('Success', 'Welcome! Your account has been created with Google.');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Google Sign-In failed';
       Alert.alert('Google Sign-In Failed', errorMessage);
@@ -138,19 +128,8 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
       const result = await socialAuthService.signInWithApple();
       const request = socialAuthService.convertToApiRequest(result);
       
-      if (isExpoGo) {
-        Alert.alert(
-          'Demo Mode',
-          'This is a demo of Apple Sign-Up. In production, this would create an account with Apple.',
-          [{ text: 'Continue Demo', onPress: async () => {
-            await socialAuth(request);
-            Alert.alert('Success', 'Demo Apple account created!');
-          }}, { text: 'Cancel', style: 'cancel' }]
-        );
-      } else {
-        await socialAuth(request);
-        Alert.alert('Success', 'Welcome! Your account has been created with Apple.');
-      }
+      await socialAuth(request);
+      Alert.alert('Success', 'Welcome! Your account has been created with Apple.');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Apple Sign-In failed';
       Alert.alert('Apple Sign-In Failed', errorMessage);
@@ -189,7 +168,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
             {isExpoGo && (
               <View style={styles.devBanner}>
                 <Text style={styles.devBannerText}>
-                  🧪 Running in Expo Go - Social auth will show demo mode
+                  🧪 Development Mode - Limited social auth features
                 </Text>
               </View>
             )}
@@ -213,9 +192,9 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                     <ActivityIndicator color="#4285F4" size="small" />
                   ) : (
                     <>
-                      <Text style={styles.socialButtonIcon}>🔵</Text>
+                      <AntDesign name="google" size={20} color="#4285F4" style={styles.socialButtonIcon} />
                       <Text style={styles.socialButtonText}>
-                        Continue with Google{isExpoGo ? ' (Demo)' : ''}
+                        Continue with Google
                       </Text>
                     </>
                   )}
@@ -234,9 +213,9 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                       <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
                       <>
-                        <Text style={styles.socialButtonIcon}>🍎</Text>
+                        <AntDesign name="apple1" size={20} color="#FFFFFF" style={styles.socialButtonIcon} />
                         <Text style={[styles.socialButtonText, styles.appleButtonText]}>
-                          Continue with Apple{isExpoGo ? ' (Demo)' : ''}
+                          Continue with Apple
                         </Text>
                       </>
                     )}

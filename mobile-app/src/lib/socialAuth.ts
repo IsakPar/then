@@ -47,8 +47,8 @@ class SocialAuthService {
   private configureGoogleSignIn() {
     if (GoogleSignin) {
       GoogleSignin.configure({
-        webClientId: 'YOUR_WEB_CLIENT_ID', // This will need to be configured
-        iosClientId: 'YOUR_IOS_CLIENT_ID', // This will need to be configured
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'your-ios-client-id.apps.googleusercontent.com',
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'your-web-client-id.apps.googleusercontent.com',
         offlineAccess: true,
         hostedDomain: '',
         forceCodeForRefreshToken: true,
