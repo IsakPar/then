@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AuthUtils, ValidationUtils, RateLimitUtils } from '@/lib/auth-utils'
 import { SignJWT } from 'jose'
+import { OAuth2Client } from 'google-auth-library'
+import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 
 // Types for social auth
 interface SocialAuthRequest {
@@ -31,10 +34,15 @@ interface AuthResponse {
 const JWT_SECRET = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || 'fallback-secret');
 
 export async function POST(request: NextRequest): Promise<NextResponse<AuthResponse>> {
+  console.log('🚀 Social auth endpoint hit');
+  
   try {
     // Rate limiting
     const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    console.log('🌐 Client IP:', clientIP);
+    
     if (RateLimitUtils.isRateLimited(`social-auth:${clientIP}`, 15, 15 * 60 * 1000)) {
+      console.log('⚠️ Rate limited:', clientIP);
       return NextResponse.json(
         { 
           success: false, 
@@ -47,9 +55,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
     // Parse and validate request body
     let body: SocialAuthRequest;
     try {
+      console.log('📝 Parsing request body...');
       body = await request.json();
+      console.log('✅ Request body parsed:', { 
+        provider: body.provider, 
+        hasIdToken: !!body.idToken, 
+        hasUser: !!body.user,
+        userEmail: body.user?.email 
+      });
     } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
+      console.error('❌ Failed to parse request body:', parseError);
       return NextResponse.json(
         { 
           success: false, 
@@ -59,141 +74,180 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
       );
     }
 
+    // Log environment check
+    console.log('🔧 Environment check:', {
+      hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+      hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    });
+
+    // Validate request structure
+    console.log('🔍 Validating request structure...');
+    if (!body.provider || !body.idToken || !body.user) {
+      console.error('❌ Missing required fields:', {
+        hasProvider: !!body.provider,
+        hasIdToken: !!body.idToken,
+        hasUser: !!body.user
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Missing required fields: provider, idToken, and user are required' 
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!body.user.email || !body.user.id) {
+      console.error('❌ Missing user fields:', {
+        hasEmail: !!body.user.email,
+        hasId: !!body.user.id
+      });
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Missing required user fields: email and id are required' 
+        },
+        { status: 400 }
+      );
+    }
+
+    if (body.provider !== 'google' && body.provider !== 'apple') {
+      console.error('❌ Invalid provider:', body.provider);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Invalid provider. Must be google or apple' 
+        },
+        { status: 400 }
+      );
+    }
+
     console.log('📱 Social auth request received:', {
       provider: body.provider,
       hasIdToken: !!body.idToken,
       hasUser: !!body.user,
-      userEmail: body.user?.email,
+      userEmail: body.user.email,
       isDevelopment: process.env.NODE_ENV === 'development'
     });
-    
-    if (!body.provider || !body.idToken) {
-      console.error('Missing required fields - provider:', body.provider, 'idToken:', !!body.idToken);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Provider and idToken are required' 
-        },
-        { status: 400 }
-      );
-    }
 
-    if (!['google', 'apple'].includes(body.provider)) {
-      console.error('Unsupported provider:', body.provider);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Unsupported provider. Only Google and Apple are supported.' 
-        },
-        { status: 400 }
-      );
-    }
+    console.log('📱 Processing social auth for:', {
+      email: body.user.email,
+      name: body.user.name,
+      provider: body.provider
+    });
 
-    // Validate and extract user data from social auth request
-    if (!body.user?.email) {
-      console.error('Missing user email:', body.user);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Email is required from social provider' 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Sanitize inputs
-    const email = ValidationUtils.sanitizeInput(body.user.email).toLowerCase();
-    const name = ValidationUtils.sanitizeInput(body.user.name || email.split('@')[0]);
-    const socialUserId = ValidationUtils.sanitizeInput(body.user.id || '');
-
-    console.log('📱 Processing social auth for:', { email, name, provider: body.provider });
-
-    // Validate email format
-    if (!ValidationUtils.isValidEmail(email)) {
-      console.error('Invalid email format:', email);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid email address from social provider' 
-        },
-        { status: 400 }
-      );
-    }
-
-    // In development mode, allow mock tokens for testing
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const isMockToken = body.idToken.startsWith('mock-');
-    
-    if (isDevelopment && isMockToken) {
+    // Environment-specific token validation
+    if (process.env.NODE_ENV === 'development') {
       console.log('🔧 Development mode: Accepting mock token for testing');
     } else {
-      // TODO: Verify the idToken with the respective provider (Google/Apple)
-      // For now, we'll trust the token since it comes from our own mobile app
-      // In production, you should verify:
-      // - Google: Verify JWT with Google's public keys
-      // - Apple: Verify JWT with Apple's public keys
-      console.log('🔧 Production mode: Token verification not implemented yet');
-    }
-
-    // Check if user exists or create new user
-    let user = await AuthUtils.findUserByEmail(email);
-    
-    if (!user) {
-      // Create new user from social login - social users don't have passwords
-      user = await AuthUtils.createUser(email, '', name, 'customer');
+      // Production: Validate token with Google
+      console.log('🔒 Production mode: Validating token with Google...');
       
-      if (!user) {
-        console.error('Failed to create user:', email);
+      if (!process.env.GOOGLE_CLIENT_ID) {
+        console.error('❌ GOOGLE_CLIENT_ID environment variable is required');
+        throw new Error('GOOGLE_CLIENT_ID environment variable is required');
+      }
+
+      try {
+        console.log('🔍 Verifying Google token...');
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+          idToken: body.idToken,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        console.log('✅ Google token verified for:', payload?.email);
+
+        if (!payload) {
+          throw new Error('Invalid token payload');
+        }
+
+        // Ensure the email matches
+        if (payload.email !== body.user.email) {
+          console.error('❌ Email mismatch:', { tokenEmail: payload.email, requestEmail: body.user.email });
+          throw new Error('Token email does not match request email');
+        }
+      } catch (tokenError) {
+        console.error('❌ Token verification failed:', tokenError);
         return NextResponse.json(
           { 
             success: false, 
-            error: 'Failed to create user account' 
+            error: 'Invalid authentication token' 
           },
-          { status: 500 }
+          { status: 401 }
         );
       }
-
-      // Mark email as verified for social logins
-      await AuthUtils.markEmailVerified(email);
-
-      console.log(`✅ Created new ${body.provider} user:`, email);
-    } else {
-      // Update existing user's social info if needed
-      console.log(`✅ Existing ${body.provider} user signed in:`, email);
     }
 
-    // Generate JWT token using SignJWT
-    const token = await new SignJWT({
-      sub: user.id,
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('30d')
-      .setIssuer('lastminutelive')
-      .setAudience('lastminutelive-mobile')
-      .sign(JWT_SECRET);
+    // Database operations
+    console.log('💾 Starting database operations...');
+    try {
+      // Check if user exists
+      console.log('🔍 Checking if user exists:', body.user.email);
+      const existingUser = await AuthUtils.findUserByEmail(body.user.email);
 
-    console.log('✅ Social auth successful for:', email);
+             let dbUser;
+       if (existingUser) {
+         console.log('👤 User exists, updating...');
+         dbUser = existingUser;
+         
+         // Update email verification status for social auth
+         if (!dbUser.emailVerified) {
+           console.log('📧 Updating email verification status...');
+           await AuthUtils.markEmailVerified(body.user.email);
+         }
+       } else {
+         console.log('👤 Creating new user...');
+         
+         dbUser = await AuthUtils.createUser(body.user.email, crypto.randomBytes(32).toString('hex'), body.user.name || body.user.email.split('@')[0], 'customer');
+         console.log(`✅ Created new ${body.provider} user:`, dbUser.email);
+       }
 
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        emailVerified: !!user.emailVerified, // Convert Date to boolean
-      },
-      token,
-    });
+             // Generate JWT token
+       console.log('🔑 Generating JWT token...');
+       const token = await new SignJWT({
+         sub: dbUser.id,
+         userId: dbUser.id,
+         email: dbUser.email,
+         name: dbUser.name,
+         role: dbUser.role,
+       })
+         .setProtectedHeader({ alg: 'HS256' })
+         .setIssuedAt()
+         .setExpirationTime('30d')
+         .setIssuer('lastminutelive')
+         .setAudience('lastminutelive-mobile')
+         .sign(JWT_SECRET);
+
+       console.log(`✅ Social auth successful for:`, dbUser.email);
+
+       return NextResponse.json({
+         success: true,
+         message: 'Authentication successful',
+         user: {
+           id: dbUser.id,
+           email: dbUser.email,
+           name: dbUser.name,
+           role: dbUser.role,
+           emailVerified: !!dbUser.emailVerified // Convert Date to boolean
+         },
+         token
+       });
+
+    } catch (dbError) {
+      console.error('❌ Database error:', dbError);
+      throw dbError;
+    }
 
   } catch (error) {
-    console.error('Social auth error:', error);
+    console.error('💥 Social auth error:', error);
+    console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('💥 Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error)
+    });
     
     return NextResponse.json(
       { 
@@ -202,5 +256,104 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
       },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Verify Google ID token
+ */
+async function verifyGoogleToken(idToken: string, expectedEmail: string): Promise<void> {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new Error('GOOGLE_CLIENT_ID environment variable is required');
+  }
+
+  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    
+    if (!payload) {
+      throw new Error('Invalid Google token payload');
+    }
+
+    // Verify the email matches what was sent
+    if (payload.email !== expectedEmail) {
+      throw new Error('Token email does not match provided email');
+    }
+
+    // Verify the token is not expired
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      throw new Error('Google token has expired');
+    }
+
+    // Additional security checks
+    if (!payload.email_verified) {
+      throw new Error('Google email not verified');
+    }
+
+  } catch (error) {
+    console.error('Google token verification failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Verify Apple ID token
+ */
+async function verifyAppleToken(idToken: string, expectedEmail: string): Promise<void> {
+  if (!process.env.APPLE_TEAM_ID || !process.env.APPLE_KEY_ID) {
+    throw new Error('Apple Sign-In environment variables are required');
+  }
+
+  try {
+    // Decode the token header to get the key ID
+    const decodedHeader = jwt.decode(idToken, { complete: true });
+    
+    if (!decodedHeader || !decodedHeader.header.kid) {
+      throw new Error('Invalid Apple token header');
+    }
+
+    // For now, we'll do basic JWT validation
+    // In a full production setup, you would:
+    // 1. Fetch Apple's public keys from https://appleid.apple.com/auth/keys
+    // 2. Verify the signature using the appropriate public key
+    // 3. Validate all claims
+    
+    const decoded = jwt.decode(idToken, { complete: true });
+    
+    if (!decoded || !decoded.payload) {
+      throw new Error('Invalid Apple token');
+    }
+
+    const payload = decoded.payload as any;
+
+    // Basic validation
+    if (payload.email && payload.email !== expectedEmail) {
+      throw new Error('Token email does not match provided email');
+    }
+
+    // Verify audience (should be your app's bundle ID)
+    // You might want to add APPLE_CLIENT_ID to env vars
+    
+    // Verify expiration
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      throw new Error('Apple token has expired');
+    }
+
+    // Verify issuer
+    if (payload.iss !== 'https://appleid.apple.com') {
+      throw new Error('Invalid Apple token issuer');
+    }
+
+  } catch (error) {
+    console.error('Apple token verification failed:', error);
+    throw error;
   }
 } 
