@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "icon": "./assets/lml-appstore.png"
+      "icon": "./assets/lml-appstore.png",
+      "bundleIdentifier": "com.isakpar.lastminutelive"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +24,8 @@
         "backgroundColor": "#F7D92A"
       },
       "edgeToEdgeEnabled": true,
-      "icon": "./assets/lml-appstore.png"
+      "icon": "./assets/lml-appstore.png",
+      "package": "com.isakpar.lastminutelive"
     },
     "web": {
       "favicon": "./assets/lml-appstore.png"

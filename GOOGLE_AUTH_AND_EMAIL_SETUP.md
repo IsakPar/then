@@ -35,9 +35,20 @@ This guide covers:
      - **Authorized redirect URIs**:
        - `http://localhost:3001/api/auth/callback/google` (for local development)
        - `https://then-production.up.railway.app/api/auth/callback/google` (for production)
+       - `com.isakpar.lastminutelive://oauth/google` (for mobile app)
 
 5. **Copy your credentials**
    - Copy the **Client ID** and **Client Secret**
+
+### Mobile App Bundle ID Information
+
+Your mobile app is already configured with the following identifiers:
+
+- **iOS Bundle ID**: `com.isakpar.lastminutelive`
+- **Android Package**: `com.isakpar.lastminutelive`
+- **URL Scheme**: `com.isakpar.lastminutelive`
+
+These are defined in `mobile-app/app.json` and will be used when you build the mobile app.
 
 ### Step 2: Configure Environment Variables
 
