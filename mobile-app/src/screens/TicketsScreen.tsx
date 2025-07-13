@@ -53,7 +53,14 @@ export default function TicketsScreen({ navigation }: TicketsScreenProps) {
       setTickets(userTickets);
     } catch (err) {
       console.error('❌ Error loading tickets:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load tickets');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load tickets';
+      
+      // If authentication fails, show specific message
+      if (errorMessage.includes('Unauthorized') || errorMessage.includes('Authentication required')) {
+        setError('Authentication expired. Please sign out and sign in again.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

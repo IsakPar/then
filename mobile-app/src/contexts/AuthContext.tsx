@@ -97,6 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await apiClient.verifyToken();
       
       if (response.success && response.user && response.token) {
+        console.log('✅ Authentication check successful for user:', response.user.email);
         dispatch({
           type: 'AUTH_SUCCESS',
           payload: {
@@ -105,10 +106,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           },
         });
       } else {
-        dispatch({ type: 'AUTH_FAILURE', payload: 'Token verification failed' });
+        console.log('❌ Authentication check failed:', response.error);
+        dispatch({ type: 'AUTH_FAILURE', payload: response.error || 'Token verification failed' });
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('❌ Auth check failed:', error);
       dispatch({ type: 'AUTH_FAILURE', payload: 'Authentication check failed' });
     }
   };

@@ -161,8 +161,11 @@ class ApiClient {
   async verifyToken(): Promise<AuthResponse> {
     const token = await this.getStoredToken();
     if (!token) {
+      console.log('🔐 No stored token found');
       return { success: false, error: 'No token found' };
     }
+
+    console.log('🔐 Verifying token, length:', token.length);
 
     try {
       const response = await this.request<AuthResponse>('/api/auth/verify', {
@@ -172,14 +175,23 @@ class ApiClient {
         },
       });
       
+      console.log('🔐 Token verification response:', { 
+        success: response.success, 
+        hasUser: !!response.user,
+        hasToken: !!response.token,
+        error: response.error 
+      });
+      
       // Store the token if verification was successful and token was refreshed
       if (response.success && response.token && response.token !== token) {
+        console.log('🔐 Storing refreshed token');
         await this.storeToken(response.token);
       }
       
       return response;
     } catch (error) {
-      console.error('Token verification error:', error);
+      console.error('🔐 Token verification error:', error);
+      console.log('🔐 Removing invalid token from storage');
       await this.removeToken(); // Remove invalid token
       return { success: false, error: 'Token verification failed' };
     }
@@ -189,15 +201,17 @@ class ApiClient {
    * Get user's bookings
    */
   async getUserBookings(): Promise<UserBooking[]> {
-    const token = await this.getStoredToken();
-    if (!token) {
-      throw new Error('Authentication required');
+    // Always verify token before making the request
+    const verifyResponse = await this.verifyToken();
+    if (!verifyResponse.success || !verifyResponse.token) {
+      throw new Error('Authentication required - please log in again');
     }
 
+    // Use the verified/refreshed token
     return this.request<UserBooking[]>('/api/user/bookings', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${verifyResponse.token}`,
       },
     });
   }

@@ -40,5 +40,6 @@
     "lastminutelive",
     "mobile-app",
     "**/* 2.*"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

@@ -116,6 +116,7 @@ export async function GET(request: NextRequest) {
       console.log('🔐 Mobile app detected: Validating JWT token');
       
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      console.log('🔐 Token length:', token.length);
       
       try {
         // Verify JWT token
@@ -124,21 +125,28 @@ export async function GET(request: NextRequest) {
           audience: 'lastminutelive-mobile',
         });
 
+        console.log('🔐 JWT payload:', { 
+          userId: payload.userId, 
+          email: payload.email, 
+          iss: payload.iss, 
+          aud: payload.aud 
+        });
+
         // Extract user info from payload
         const userId = payload.userId as string;
         const email = payload.email as string;
 
         if (!userId || !email) {
-          console.log('❌ Invalid JWT token payload');
+          console.log('❌ Invalid JWT token payload:', { userId: !!userId, email: !!email });
           return NextResponse.json(
-            { error: 'Invalid authentication token' },
+            { error: 'Invalid authentication token - missing user data' },
             { status: 401 }
           );
         }
 
         // Validate email format
         if (!ValidationUtils.isValidEmail(email)) {
-          console.log('❌ Invalid email in JWT token');
+          console.log('❌ Invalid email in JWT token:', email);
           return NextResponse.json(
             { error: 'Invalid email in token' },
             { status: 401 }
@@ -148,10 +156,18 @@ export async function GET(request: NextRequest) {
         // Get fresh user data from database
         const user = await AuthUtils.findUserByEmail(email);
         
-        if (!user || user.id !== userId) {
-          console.log('❌ User not found or JWT token mismatch');
+        if (!user) {
+          console.log('❌ User not found in database for email:', email);
           return NextResponse.json(
-            { error: 'User not found or token mismatch' },
+            { error: 'User not found' },
+            { status: 401 }
+          );
+        }
+
+        if (user.id !== userId) {
+          console.log('❌ JWT token user ID mismatch. Token:', userId, 'DB:', user.id);
+          return NextResponse.json(
+            { error: 'Token user mismatch' },
             { status: 401 }
           );
         }
@@ -180,9 +196,29 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(allBookings);
 
       } catch (jwtError) {
-        console.error('❌ JWT token verification failed:', jwtError);
+        console.error('❌ JWT token verification failed:', {
+          error: jwtError instanceof Error ? jwtError.message : String(jwtError),
+          name: jwtError instanceof Error ? jwtError.name : 'Unknown',
+          tokenLength: token.length,
+          tokenStart: token.substring(0, 20) + '...'
+        });
+        
+        // Provide more specific error messages based on the JWT error
+        let errorMessage = 'Invalid or expired authentication token';
+        if (jwtError instanceof Error) {
+          if (jwtError.message.includes('signature')) {
+            errorMessage = 'Token signature verification failed';
+          } else if (jwtError.message.includes('expired')) {
+            errorMessage = 'Authentication token has expired';
+          } else if (jwtError.message.includes('issuer')) {
+            errorMessage = 'Token issuer validation failed';
+          } else if (jwtError.message.includes('audience')) {
+            errorMessage = 'Token audience validation failed';
+          }
+        }
+        
         return NextResponse.json(
-          { error: 'Invalid or expired authentication token' },
+          { error: errorMessage },
           { status: 401 }
         );
       }
