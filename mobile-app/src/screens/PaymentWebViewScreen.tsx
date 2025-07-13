@@ -27,31 +27,43 @@ export default function PaymentWebViewScreen({ navigation, route }: PaymentWebVi
   // Handle navigation state changes to detect payment completion
   const handleNavigationStateChange = (navState: any) => {
     console.log('🌐 WebView navigation:', navState.url);
+    console.log('🌐 WebView can go back:', navState.canGoBack);
+    console.log('🌐 WebView loading:', navState.loading);
+    
     setCurrentUrl(navState.url);
     setCanGoBack(navState.canGoBack);
     setLoading(navState.loading);
 
     // Check if we've reached a success or cancel page
     if (navState.url) {
-      // Detect WebView-specific success patterns
+      // Detect WebView-specific success patterns (prioritize these)
       if (navState.url.includes('payment/webview/success') || 
-          navState.url.includes('payment/success') || 
-          navState.url.includes('checkout/success')) {
+          navState.url.includes('checkout/success') ||
+          navState.url.includes('success?session_id=')) {
+        console.log('✅ Payment success detected from URL:', navState.url);
         handlePaymentSuccess(navState.url);
       } 
       // Detect WebView-specific cancel patterns
       else if (navState.url.includes('payment/webview/cancel') || 
-               navState.url.includes('payment/cancel') || 
-               navState.url.includes('checkout/cancel')) {
+               navState.url.includes('checkout/cancel') ||
+               navState.url.includes('cancel') || 
+               navState.url.includes('cancelled=true')) {
+        console.log('❌ Payment cancel detected from URL:', navState.url);
         handlePaymentCancel();
       }
-      // Additional patterns that might indicate completion
+      // Additional success patterns that might indicate completion
       else if (navState.url.includes('session_id=')) {
         // Extract session ID from URL and handle success
         const sessionId = extractSessionId(navState.url);
         if (sessionId) {
+          console.log('✅ Session ID detected in URL, treating as success:', sessionId);
           handlePaymentSuccess(navState.url, sessionId);
         }
+      }
+      // Stripe-specific success patterns
+      else if (navState.url.includes('stripe.com') && navState.url.includes('success')) {
+        console.log('✅ Stripe success page detected');
+        handlePaymentSuccess(navState.url);
       }
     }
   };
@@ -71,17 +83,27 @@ export default function PaymentWebViewScreen({ navigation, route }: PaymentWebVi
   // Handle successful payment
   const handlePaymentSuccess = (url: string, sessionId?: string) => {
     console.log('✅ Payment successful, navigating to success screen');
+    console.log('✅ Success URL:', url);
     
     const extractedSessionId = sessionId || extractSessionId(url);
+    console.log('✅ Extracted session ID:', extractedSessionId);
     
-    navigation.replace('PaymentSuccess', {
-      sessionId: extractedSessionId || undefined,
-    });
+    // Ensure we don't navigate multiple times
+    if (extractedSessionId) {
+      console.log('✅ Navigating to PaymentSuccess with session ID:', extractedSessionId);
+      navigation.replace('PaymentSuccess', {
+        sessionId: extractedSessionId,
+      });
+    } else {
+      console.log('✅ No session ID found, navigating to PaymentSuccess anyway');
+      navigation.replace('PaymentSuccess', {});
+    }
   };
 
   // Handle payment cancellation
   const handlePaymentCancel = () => {
     console.log('❌ Payment cancelled, navigating to cancel screen');
+    console.log('❌ Current URL:', currentUrl);
     
     navigation.replace('PaymentCancel', {
       showId,
