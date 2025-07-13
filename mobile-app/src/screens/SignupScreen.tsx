@@ -44,11 +44,27 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Password validation
+    // Password validation - Match backend requirements exactly
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else {
+      const passwordErrors = [];
+      if (formData.password.length < 8) {
+        passwordErrors.push('at least 8 characters');
+      }
+      if (!/[A-Z]/.test(formData.password)) {
+        passwordErrors.push('one uppercase letter');
+      }
+      if (!/[a-z]/.test(formData.password)) {
+        passwordErrors.push('one lowercase letter');
+      }
+      if (!/\d/.test(formData.password)) {
+        passwordErrors.push('one number');
+      }
+      
+      if (passwordErrors.length > 0) {
+        newErrors.password = `Password must contain ${passwordErrors.join(', ')}`;
+      }
     }
 
     // Confirm password validation
@@ -89,13 +105,37 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
         phone: formData.phone.trim() || undefined,
       });
       
-      // Navigate to email verification screen
-      navigation.navigate('EmailVerification', { 
-        email: formData.email.trim().toLowerCase() 
-      });
+      // Show success message with clear instructions
+      Alert.alert(
+        'Account Created! 🎉', 
+        `Welcome to LastMinuteLive! We've sent a verification email to ${formData.email.trim().toLowerCase()}.\n\nPlease check your inbox and click the verification link to complete your account setup.`,
+        [
+          {
+            text: 'Check Email',
+            onPress: () => navigation.navigate('EmailVerification', { 
+              email: formData.email.trim().toLowerCase() 
+            })
+          }
+        ]
+      );
     } catch (error) {
+      // Parse backend error response for better error messages
       const errorMessage = error instanceof Error ? error.message : 'Signup failed';
-      Alert.alert('Signup Failed', errorMessage);
+      
+      // Check if it's a password validation error from backend
+      if (errorMessage.includes('Password requirements not met') || errorMessage.includes('Password must contain')) {
+        Alert.alert(
+          'Password Requirements Not Met', 
+          'Your password must contain:\n• At least 8 characters\n• One uppercase letter (A-Z)\n• One lowercase letter (a-z)\n• One number (0-9)'
+        );
+      } else if (errorMessage.includes('email already exists') || errorMessage.includes('account with this email')) {
+        Alert.alert(
+          'Account Already Exists', 
+          'An account with this email already exists. Please try signing in instead, or use a different email address.'
+        );
+      } else {
+        Alert.alert('Signup Failed', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -84,11 +84,18 @@ export default function SeatSelectionScreen({ navigation, route }: SeatSelection
     try {
       // Get the selected seat IDs
       const selectedSeatIds = selectedSeats.map(seat => seat.id);
+      console.log('🎫 Proceeding to checkout with seats:', selectedSeatIds);
 
       // Reserve seats and get Stripe checkout URL
       const reservationResponse = await apiClient.reserveSeats(showId, selectedSeatIds);
+      console.log('✅ Reservation successful:', reservationResponse);
 
-      // Navigate to WebView payment screen instead of external browser
+      // Validate response structure
+      if (!reservationResponse.url || !reservationResponse.sessionId) {
+        throw new Error('Invalid reservation response: Missing checkout URL or session ID');
+      }
+
+      // Navigate to WebView payment screen
       navigation.navigate('PaymentWebView', {
         checkoutUrl: reservationResponse.url,
         showId: showId,
@@ -96,8 +103,47 @@ export default function SeatSelectionScreen({ navigation, route }: SeatSelection
       });
 
     } catch (error) {
+      console.error('🚨 Booking error:', error);
+      
+      // Parse and provide specific error messages
       const errorMessage = error instanceof Error ? error.message : 'Booking failed';
-      Alert.alert('Booking Error', errorMessage);
+      
+      if (errorMessage.includes('seats are no longer available') || errorMessage.includes('already reserved')) {
+        Alert.alert(
+          'Seats Unavailable', 
+          'Sorry, one or more of your selected seats are no longer available. Please select different seats.',
+          [
+            { 
+              text: 'Select Again',
+              onPress: () => {
+                // Clear selections and reload seats
+                setSelectedSeats([]);
+                loadShowDetails();
+              }
+            }
+          ]
+        );
+      } else if (errorMessage.includes('Payment system not configured') || errorMessage.includes('Stripe')) {
+        Alert.alert(
+          'Payment System Error', 
+          'The payment system is temporarily unavailable. Please try again later or contact support.'
+        );
+      } else if (errorMessage.includes('HTTP 500') || errorMessage.includes('Internal server error')) {
+        Alert.alert(
+          'Server Error', 
+          'There was a temporary server issue. Please try again in a moment.'
+        );
+      } else if (errorMessage.includes('HTTP 400') || errorMessage.includes('Missing') || errorMessage.includes('Invalid')) {
+        Alert.alert(
+          'Booking Error', 
+          'There was an issue with your booking request. Please try selecting your seats again.'
+        );
+      } else {
+        Alert.alert(
+          'Booking Error', 
+          `Unable to proceed with booking: ${errorMessage}\n\nPlease try again or contact support if the problem continues.`
+        );
+      }
     } finally {
       setIsBooking(false);
     }

@@ -25,7 +25,7 @@ export class EmailService {
   private fromName: string;
 
   constructor() {
-    this.fromEmail = process.env.FROM_EMAIL || 'noreply@lastminutelive.com';
+    this.fromEmail = process.env.FROM_EMAIL || 'noreply@lml-tickets.com';
     this.fromName = process.env.FROM_NAME || 'LastMinuteLive';
   }
 

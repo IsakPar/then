@@ -285,6 +285,11 @@ class SocialAuthService {
     }
   }
 
+  // Helper method to check if running in Expo Go
+  isRunningInExpoGo(): boolean {
+    return this.isExpoGo;
+  }
+
   // Helper method to check configuration status
   getConfigurationStatus() {
     return {
