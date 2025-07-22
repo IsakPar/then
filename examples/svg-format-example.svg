@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1600 1200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Stage area -->
+  <rect x="700" y="50" width="200" height="80" fill="#2D2D2D" stroke="#FFF" stroke-width="2"/>
+  <text x="800" y="95" text-anchor="middle" fill="#FFF" font-size="16">STAGE</text>
+  
+  <!-- Stalls Center Section -->
+  <g id="stalls-center" data-section="Stalls" data-price="7500" data-color="#8B5CF6">
+    <!-- Row A -->
+    <circle cx="750" cy="450" r="8" class="seat" data-row="A" data-seat="1" data-status="available"/>
+    <circle cx="772" cy="450" r="8" class="seat" data-row="A" data-seat="2" data-status="available"/>
+    <circle cx="794" cy="450" r="8" class="seat" data-row="A" data-seat="3" data-status="booked"/>
+    <circle cx="816" cy="450" r="8" class="seat" data-row="A" data-seat="4" data-status="available"/>
+    
+    <!-- Row B (curved) -->
+    <circle cx="748" cy="472" r="8" class="seat" data-row="B" data-seat="1" data-status="available"/>
+    <circle cx="770" cy="472" r="8" class="seat" data-row="B" data-seat="2" data-status="available"/>
+    <circle cx="792" cy="472" r="8" class="seat" data-row="B" data-seat="3" data-status="available"/>
+    <circle cx="814" cy="472" r="8" class="seat" data-row="B" data-seat="4" data-status="booked"/>
+  </g>
+  
+  <!-- Royal Circle Section -->
+  <g id="royal-circle" data-section="Royal Circle" data-price="9500" data-color="#06B6D4">
+    <!-- Curved rows following theater contour -->
+    <circle cx="680" cy="580" r="8" class="seat" data-row="A" data-seat="1" data-status="available"/>
+    <circle cx="700" cy="585" r="8" class="seat" data-row="A" data-seat="2" data-status="available"/>
+    <circle cx="720" cy="590" r="8" class="seat" data-row="A" data-seat="3" data-status="available"/>
+  </g>
+  
+  <!-- Section Labels -->
+  <text x="800" y="520" text-anchor="middle" fill="#8B5CF6" font-size="14" font-weight="bold">STALLS CENTER</text>
+  <text x="700" y="620" text-anchor="middle" fill="#06B6D4" font-size="14" font-weight="bold">ROYAL CIRCLE</text>
+</svg> 

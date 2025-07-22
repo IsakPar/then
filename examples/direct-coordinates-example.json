@@ -1,0 +1,55 @@
+{
+  "seatMapId": "victoria-palace-hamilton",
+  "name": "Victoria Palace Theatre - Hamilton (Direct Coordinates)",
+  "svgViewbox": "0 0 1600 1200",
+  "seats": [
+    {
+      "id": "stalls-a1",
+      "row_letter": "A",
+      "seat_number": 1,
+      "section_id": "stalls-center",
+      "position": {
+        "x": 750,
+        "y": 450
+      },
+      "price_pence": 7500,
+      "status": "available",
+      "color_hex": "#8B5CF6"
+    },
+    {
+      "id": "stalls-a2", 
+      "row_letter": "A",
+      "seat_number": 2,
+      "section_id": "stalls-center",
+      "position": {
+        "x": 772,
+        "y": 450
+      },
+      "price_pence": 7500,
+      "status": "available",
+      "color_hex": "#8B5CF6"
+    },
+    {
+      "id": "stalls-a3",
+      "row_letter": "A", 
+      "seat_number": 3,
+      "section_id": "stalls-center",
+      "position": {
+        "x": 794,
+        "y": 450
+      },
+      "price_pence": 7500,
+      "status": "booked",
+      "color_hex": "#8B5CF6"
+    }
+  ],
+  "sections": [
+    {
+      "id": "stalls-center",
+      "name": "Stalls",
+      "display_name": "STALLS CENTER", 
+      "color_hex": "#8B5CF6",
+      "base_price_pence": 7500
+    }
+  ]
+} 

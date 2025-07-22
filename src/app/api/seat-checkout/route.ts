@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createReservations, getShowWithPricing } from '@/lib/db/queries'
+import { createReservations, getShowWithPricing, convertHardcodedSeatIds } from '@/lib/db/queries'
 import Stripe from 'stripe'
 
 // TODO: Require auth - seat reservations should be protected
@@ -48,12 +48,28 @@ export async function POST(request: NextRequest) {
     console.log('🎫 Creating seat reservations for show:', showId)
     console.log('🎯 Specific seat IDs to reserve:', specificSeatIds)
 
+    // 🔄 CONVERT HARDCODED SEAT IDS TO REAL UUIDS
+    // This handles the mapping from hardcoded seat map IDs (like "back-1-14") to database UUIDs
+    const realSeatIds = await convertHardcodedSeatIds(showId, specificSeatIds);
+    
+    if (realSeatIds.length === 0) {
+      console.error('❌ No valid seat mappings found for provided seat IDs');
+      return NextResponse.json({ 
+        error: 'Invalid seat selection - seats not found',
+        details: 'The selected seats could not be mapped to valid database records'
+      }, { status: 400 });
+    }
+
+    if (realSeatIds.length !== specificSeatIds.length) {
+      console.warn(`⚠️ Mapping mismatch: ${specificSeatIds.length} hardcoded IDs → ${realSeatIds.length} real IDs`);
+    }
+
     // Generate session token for this reservation
     const sessionToken = crypto.randomUUID();
 
-    // Reserve the specific seats using the new createReservations function
+    // Reserve the specific seats using the converted UUIDs
     const reservationResult = await createReservations(
-      specificSeatIds,
+      realSeatIds, // Use converted UUIDs instead of hardcoded IDs
       sessionToken,
       15 // 15 minutes expiration
     );

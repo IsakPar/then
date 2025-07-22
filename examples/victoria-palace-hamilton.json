@@ -1,0 +1,119 @@
+{
+  "name": "Victoria Palace Theatre - Hamilton",
+  "description": "Curved theater layout matching real Victoria Palace Theatre dimensions",
+  "totalCapacity": 1200,
+  "svgViewbox": "0 0 1600 1200",
+  "stageArea": {
+    "x": 700,
+    "y": 50,
+    "width": 200,
+    "height": 80,
+    "label": "STAGE"
+  },
+  "sections": [
+    {
+      "id": "stalls-center",
+      "name": "Stalls",
+      "displayName": "STALLS CENTER",
+      "shape": "curved-orchestra",
+      "curveConfig": {
+        "centerX": 800,
+        "centerY": 150,
+        "startAngle": 160,
+        "endAngle": 20,
+        "innerRadius": 120,
+        "outerRadius": 320,
+        "rowDepth": 25
+      },
+      "boundaries": {
+        "minX": 480,
+        "maxX": 1120,
+        "minY": 120,
+        "maxY": 480,
+        "buffer": 30
+      },
+      "capacity": 320,
+      "defaultPrice": 7500,
+      "colorHex": "#8B5CF6",
+      "theme": "premium"
+    },
+    {
+      "id": "stalls-left",
+      "name": "Stalls",
+      "displayName": "STALLS LEFT",
+      "shape": "curved-orchestra",
+      "curveConfig": {
+        "centerX": 800,
+        "centerY": 150,
+        "startAngle": 200,
+        "endAngle": 160,
+        "innerRadius": 140,
+        "outerRadius": 300,
+        "rowDepth": 20
+      },
+      "boundaries": {
+        "minX": 300,
+        "maxX": 480,
+        "minY": 140,
+        "maxY": 450,
+        "buffer": 25
+      },
+      "capacity": 120,
+      "defaultPrice": 6500,
+      "colorHex": "#F59E0B",
+      "theme": "standard"
+    },
+    {
+      "id": "royal-circle-center",
+      "name": "Royal Circle",
+      "displayName": "ROYAL CIRCLE",
+      "shape": "curved-balcony",
+      "curveConfig": {
+        "centerX": 800,
+        "centerY": 150,
+        "startAngle": 170,
+        "endAngle": 10,
+        "innerRadius": 350,
+        "outerRadius": 480,
+        "rowDepth": 22
+      },
+      "boundaries": {
+        "minX": 450,
+        "maxX": 1150,
+        "minY": 520,
+        "maxY": 680,
+        "buffer": 35
+      },
+      "capacity": 280,
+      "defaultPrice": 9500,
+      "colorHex": "#06B6D4",
+      "theme": "premium"
+    },
+    {
+      "id": "grand-circle",
+      "name": "Grand Circle",
+      "displayName": "GRAND CIRCLE",
+      "shape": "curved-balcony",
+      "curveConfig": {
+        "centerX": 800,
+        "centerY": 150,
+        "startAngle": 185,
+        "endAngle": -5,
+        "innerRadius": 500,
+        "outerRadius": 600,
+        "rowDepth": 20
+      },
+      "boundaries": {
+        "minX": 400,
+        "maxX": 1200,
+        "minY": 720,
+        "maxY": 880,
+        "buffer": 40
+      },
+      "capacity": 200,
+      "defaultPrice": 6500,
+      "colorHex": "#EF4444",
+      "theme": "budget"
+    }
+  ]
+} 

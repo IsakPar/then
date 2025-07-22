@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Providers from '@/components/providers'
+// import '@/lib/clear-all-caches' // ⚡ Auto-clear caches on app start (temporarily disabled)
 
 export const metadata: Metadata = {
   title: 'LastMinuteLive - Premium Theater Tickets',

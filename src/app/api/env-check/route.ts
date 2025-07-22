@@ -1,37 +1,31 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { SECURITY_CONFIG } from '@/lib/venue-security';
 
-export async function GET() {
+/**
+ * Environment configuration check endpoint
+ * Helps verify security settings are properly configured in production
+ */
+export async function GET(request: NextRequest) {
   try {
-    // Check environment variables
-    const envCheck = {
-      DATABASE_URL: !!process.env.DATABASE_URL,
-      GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
-      MAILJET_API_KEY: !!process.env.MAILJET_API_KEY,
-      MAILJET_SECRET_KEY: !!process.env.MAILJET_SECRET_KEY,
-      NEXTAUTH_SECRET: !!process.env.NEXTAUTH_SECRET,
-      NEXTAUTH_URL: !!process.env.NEXTAUTH_URL,
-      NODE_ENV: process.env.NODE_ENV,
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT
-    };
-    
-    console.log('🔍 Environment check:', envCheck);
-
-    return NextResponse.json({
-      success: true,
-      envCheck,
+    // Return security configuration status (safe for monitoring)
+    const config = {
+      mobile_blocking: SECURITY_CONFIG.enableMobileBlocking,
+      venue_staff_creation: SECURITY_CONFIG.enableVenueStaffCreation,
+      master_admin: SECURITY_CONFIG.enableMasterAdmin,
+      node_env: process.env.NODE_ENV,
+      max_login_attempts: SECURITY_CONFIG.maxLoginAttempts,
+      production_mode: SECURITY_CONFIG.productionMode,
       timestamp: new Date().toISOString()
-    });
-    
+    };
+
+    console.log('🔧 Environment check requested:', config);
+
+    return NextResponse.json(config);
+
   } catch (error) {
-    console.error('❌ Environment check failed:', error);
+    console.error('❌ Environment check error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      }, 
+      { error: 'Environment check failed' },
       { status: 500 }
     );
   }

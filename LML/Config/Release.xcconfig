@@ -1,0 +1,25 @@
+// Release Configuration for LML App
+// This file defines environment variables for production builds
+
+// API Configuration
+BASE_API_URL = https://then-production.up.railway.app
+
+// Stripe Configuration (Production Keys)
+STRIPE_PUBLISHABLE_KEY = pk_live_your_production_stripe_key_here
+
+// Google OAuth Configuration
+GOOGLE_CLIENT_ID = your_google_client_id_here.apps.googleusercontent.com
+
+// App Configuration
+APP_DISPLAY_NAME = Last Minute Live
+BUNDLE_ID_SUFFIX = 
+
+// Feature Flags for Production
+ENABLE_DEBUG_LOGGING = NO
+ENABLE_NETWORK_LOGGING = NO
+ENABLE_MOCK_DATA = NO
+
+// Build Configuration
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE
+GCC_OPTIMIZATION_LEVEL = s
+SWIFT_OPTIMIZATION_LEVEL = -O 

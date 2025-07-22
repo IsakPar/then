@@ -50,7 +50,7 @@
       "favicon": "./assets/lml-appstore.png"
     },
     "extra": {
-      "apiUrl": "https://then-production.up.railway.app",
+      "apiUrl": "http://localhost:3001",
       "eas": {
         "projectId": "your-expo-project-id"
       }

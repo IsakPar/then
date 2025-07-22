@@ -9,11 +9,116 @@ import {
   reservations,
   bookings,
   bookingSeats,
+  hardcodedSeatMappings,
   type SeatStatus,
   type NewReservation,
   type NewBooking,
   type NewSeat,
 } from './schema';
+
+// ============================================================================
+// SECURITY VALIDATION UTILITIES - TODO [Phase 1]: XSS prevention and input sanitization
+// ============================================================================
+
+/**
+ * Validate and sanitize UUID parameters to prevent injection attacks
+ */
+export function validateUUID(id: string): string {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    throw new Error(`Invalid UUID format: ${id}`);
+  }
+  return id;
+}
+
+/**
+ * Sanitize text input to prevent XSS attacks
+ */
+export function sanitizeText(text: string | null | undefined): string | null {
+  if (!text || typeof text !== 'string') return null;
+  
+  // Remove HTML tags and encode special characters
+  return text
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/<[^>]*>/g, '') // Remove all HTML tags
+    .replace(/javascript:/gi, '') // Remove javascript: URLs
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .trim()
+    .substring(0, 1000); // Limit length to prevent DoS
+}
+
+/**
+ * Validate email format with additional security checks
+ */
+export function validateEmail(email: string): string {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const sanitized = sanitizeText(email);
+  
+  if (!sanitized || !emailRegex.test(sanitized) || sanitized.length > 254) {
+    throw new Error('Invalid email format');
+  }
+  
+  return sanitized.toLowerCase();
+}
+
+/**
+ * Validate seat coordinate ranges to prevent coordinate injection
+ */
+export function validateSeatCoordinates(x: number, y: number): { x: number; y: number } {
+  if (typeof x !== 'number' || typeof y !== 'number') {
+    throw new Error('Seat coordinates must be numbers');
+  }
+  
+  if (!isFinite(x) || !isFinite(y)) {
+    throw new Error('Seat coordinates must be finite numbers');
+  }
+  
+  // Reasonable coordinate bounds for seat maps (0-10000 range)
+  if (x < 0 || x > 10000 || y < 0 || y > 10000) {
+    throw new Error('Seat coordinates out of valid range (0-10000)');
+  }
+  
+  return { x: Math.round(x), y: Math.round(y) };
+}
+
+/**
+ * Validate and sanitize venue/show names
+ */
+export function validateName(name: string | null | undefined, fieldName: string = 'name'): string {
+  const sanitized = sanitizeText(name);
+  
+  if (!sanitized || sanitized.length < 1) {
+    throw new Error(`${fieldName} is required`);
+  }
+  
+  if (sanitized.length > 200) {
+    throw new Error(`${fieldName} must be less than 200 characters`);
+  }
+  
+  return sanitized;
+}
+
+/**
+ * Rate limiting check for database operations
+ */
+const operationCounts = new Map<string, { count: number; resetTime: number }>();
+
+export function checkRateLimit(identifier: string, maxOperations: number = 100, windowMs: number = 60000): void {
+  const now = Date.now();
+  const key = `${identifier}`;
+  const current = operationCounts.get(key);
+  
+  if (!current || now > current.resetTime) {
+    operationCounts.set(key, { count: 1, resetTime: now + windowMs });
+    return;
+  }
+  
+  if (current.count >= maxOperations) {
+    throw new Error('Rate limit exceeded. Please try again later.');
+  }
+  
+  current.count++;
+}
 
 // ============================================================================
 // SHOW QUERIES
@@ -49,8 +154,12 @@ export async function getActiveShows() {
 
 /**
  * Get show by ID
+ * TODO [Phase 1]: Added security validation for UUID parameter
  */
 export async function getShowById(showId: string) {
+  // Validate UUID format to prevent injection
+  const validatedShowId = validateUUID(showId);
+  
   const result = await db
     .select({
       id: shows.id,
@@ -68,7 +177,7 @@ export async function getShowById(showId: string) {
     .where(
       and(
         eq(shows.isActive, true),
-        eq(shows.id, showId)
+        eq(shows.id, validatedShowId)
       )
     )
     .orderBy(asc(shows.date), asc(shows.time))
@@ -153,14 +262,26 @@ export async function getAvailableSeats(showId: string) {
 }
 
 /**
- * Update seat status
+ * Update seat status for both regular operations and real-time WebSocket updates
  */
-export async function updateSeatStatus(seatId: string, status: SeatStatus) {
-  return await db
-    .update(seats)
-    .set({ status, updatedAt: sql`NOW()` })
-    .where(eq(seats.id, seatId))
-    .returning();
+export async function updateSeatStatus(
+  seatId: string, 
+  status: SeatStatus | 'available' | 'reserved' | 'booked' | 'selected'
+): Promise<void> {
+  try {
+    await db
+      .update(seats)
+      .set({ 
+        status: status as SeatStatus,
+        updatedAt: sql`NOW()`
+      })
+      .where(eq(seats.id, seatId));
+      
+    console.log(`✅ Updated seat ${seatId} status to ${status}`);
+  } catch (error) {
+    console.error(`❌ Failed to update seat ${seatId} status:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -172,6 +293,48 @@ export async function updateSeatsStatus(seatIds: string[], status: SeatStatus) {
     .set({ status, updatedAt: sql`NOW()` })
     .where(inArray(seats.id, seatIds))
     .returning();
+}
+
+/**
+ * Convert hardcoded seat IDs to real database UUIDs
+ * This function handles the mapping between hardcoded seat map IDs (like "back-1-14") 
+ * and actual database UUIDs for the Hamilton demo show
+ */
+export async function convertHardcodedSeatIds(
+  showId: string,
+  hardcodedSeatIds: string[]
+): Promise<string[]> {
+  if (hardcodedSeatIds.length === 0) return [];
+
+  console.log(`🔄 Converting ${hardcodedSeatIds.length} hardcoded seat IDs for show ${showId}`);
+  console.log(`🎯 Hardcoded IDs:`, hardcodedSeatIds);
+
+  const mappings = await db
+    .select({
+      hardcodedSeatId: hardcodedSeatMappings.hardcodedSeatId,
+      realSeatId: hardcodedSeatMappings.realSeatId,
+    })
+    .from(hardcodedSeatMappings)
+    .where(
+      and(
+        eq(hardcodedSeatMappings.showId, showId),
+        inArray(hardcodedSeatMappings.hardcodedSeatId, hardcodedSeatIds)
+      )
+    );
+
+  console.log(`✅ Found ${mappings.length} mappings out of ${hardcodedSeatIds.length} requested`);
+
+  // Warn about unmapped seats
+  const mappedHardcodedIds = mappings.map(m => m.hardcodedSeatId);
+  const unmappedIds = hardcodedSeatIds.filter(id => !mappedHardcodedIds.includes(id));
+  if (unmappedIds.length > 0) {
+    console.warn(`⚠️ No mappings found for these hardcoded seat IDs:`, unmappedIds);
+  }
+
+  const realSeatIds = mappings.map(m => m.realSeatId);
+  console.log(`🎫 Converted to real seat UUIDs:`, realSeatIds);
+
+  return realSeatIds;
 }
 
 // ============================================================================

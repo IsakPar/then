@@ -8,10 +8,6 @@ import { db } from '@/lib/db/connection'
 import { bookings, shows, venues, bookingSeats, seats, sections } from '@/lib/db/schema'
 import { eq, desc } from 'drizzle-orm'
 
-// Mock user ID for development
-const MOCK_USER_ID = '550e8400-e29b-41d4-a716-446655440000';
-const MOCK_TOKEN = 'mock-jwt-token-for-development';
-
 // JWT secret for mobile app authentication
 const JWT_SECRET = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || 'fallback-secret');
 
@@ -96,173 +92,67 @@ async function getUserBookingsByEmail(email: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('📱 User bookings API called');
+    console.log('User bookings API called');
     
-    // Check if this is a mobile app request in development mode
-    const userAgent = request.headers.get('user-agent') || '';
     const authHeader = request.headers.get('authorization') || '';
-    const isMobileApp = userAgent.includes('LastMinuteLive-Mobile-App') || request.headers.get('x-mobile-app') === 'true';
-    const isDevelopment = process.env.NODE_ENV === 'development';
     
-    console.log('📱 Request details:', {
-      userAgent,
-      authHeader: authHeader.substring(0, 20) + '...',
-      isMobileApp,
-      isDevelopment
-    });
-
-    // Handle JWT token authentication (for mobile app)
-    if (authHeader.startsWith('Bearer ') && isMobileApp) {
-      console.log('🔐 Mobile app detected: Validating JWT token');
+    if (authHeader.startsWith('Bearer ')) {
+      console.log('Bearer token detected: Attempting JWT validation');
       
-      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-      console.log('🔐 Token length:', token.length);
+      const token = authHeader.substring(7);
       
       try {
-        // Verify JWT token
         const { payload } = await jwtVerify(token, JWT_SECRET, {
           issuer: 'lastminutelive',
           audience: 'lastminutelive-mobile',
         });
 
-        console.log('🔐 JWT payload:', { 
-          userId: payload.userId, 
-          email: payload.email, 
-          iss: payload.iss, 
-          aud: payload.aud 
-        });
-
-        // Extract user info from payload
         const userId = payload.userId as string;
         const email = payload.email as string;
 
-        if (!userId || !email) {
-          console.log('❌ Invalid JWT token payload:', { userId: !!userId, email: !!email });
-          return NextResponse.json(
-            { error: 'Invalid authentication token - missing user data' },
-            { status: 401 }
-          );
+        if (!userId || !email || !ValidationUtils.isValidEmail(email)) {
+          console.log('Invalid JWT payload or email');
+          return NextResponse.json({ error: 'Invalid authentication token' }, { status: 401 });
         }
 
-        // Validate email format
-        if (!ValidationUtils.isValidEmail(email)) {
-          console.log('❌ Invalid email in JWT token:', email);
-          return NextResponse.json(
-            { error: 'Invalid email in token' },
-            { status: 401 }
-          );
-        }
-
-        // Get fresh user data from database
         const user = await AuthUtils.findUserByEmail(email);
         
-        if (!user) {
-          console.log('❌ User not found in database for email:', email);
-          return NextResponse.json(
-            { error: 'User not found' },
-            { status: 401 }
-          );
+        if (!user || user.id !== userId) {
+          console.log('User not found or token mismatch');
+          return NextResponse.json({ error: 'Invalid user or token' }, { status: 401 });
         }
 
-        if (user.id !== userId) {
-          console.log('❌ JWT token user ID mismatch. Token:', userId, 'DB:', user.id);
-          return NextResponse.json(
-            { error: 'Token user mismatch' },
-            { status: 401 }
-          );
-        }
+        console.log('JWT validated for user:', user.email);
 
-        console.log('✅ JWT token validated for user:', user.email);
-
-        // Get user's bookings using both user ID and email (to catch guest bookings)
         const [userBookings, emailBookings] = await Promise.all([
           getUserBookingsById(user.id),
           getUserBookingsByEmail(user.email)
         ]);
 
-        // Combine and deduplicate bookings
-        const allBookings = [...userBookings];
-        emailBookings.forEach(emailBooking => {
-          if (!allBookings.find(b => b.id === emailBooking.id)) {
-            allBookings.push(emailBooking);
-          }
-        });
+        const allBookings = [...new Set([...userBookings, ...emailBookings])].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
 
-        // Sort by creation date descending
-        allBookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        console.log('✅ Found', allBookings.length, 'bookings for user:', user.email);
-        
+        console.log('Found', allBookings.length, 'bookings');
         return NextResponse.json(allBookings);
-
-      } catch (jwtError) {
-        console.error('❌ JWT token verification failed:', {
-          error: jwtError instanceof Error ? jwtError.message : String(jwtError),
-          name: jwtError instanceof Error ? jwtError.name : 'Unknown',
-          tokenLength: token.length,
-          tokenStart: token.substring(0, 20) + '...'
-        });
-        
-        // Provide more specific error messages based on the JWT error
-        let errorMessage = 'Invalid or expired authentication token';
-        if (jwtError instanceof Error) {
-          if (jwtError.message.includes('signature')) {
-            errorMessage = 'Token signature verification failed';
-          } else if (jwtError.message.includes('expired')) {
-            errorMessage = 'Authentication token has expired';
-          } else if (jwtError.message.includes('issuer')) {
-            errorMessage = 'Token issuer validation failed';
-          } else if (jwtError.message.includes('audience')) {
-            errorMessage = 'Token audience validation failed';
-          }
-        }
-        
-        return NextResponse.json(
-          { error: errorMessage },
-          { status: 401 }
-        );
-      }
-    }
-
-    // Handle mock authentication in development mode (fallback)
-    if (isDevelopment && authHeader.startsWith('Bearer ')) {
-      console.log('🔧 Development mode: Using mock user (auth disabled for testing)');
-      
-      try {
-        const mockBookings = await getUserBookingsById(MOCK_USER_ID);
-        console.log('🔧 Development mode: Found', mockBookings.length, 'bookings for mock user');
-        return NextResponse.json(mockBookings);
       } catch (error) {
-        console.error('🔧 Development mode: Error getting mock user bookings:', error);
-        return NextResponse.json(
-          { error: 'Error fetching mock user bookings' },
-          { status: 500 }
-        );
+        console.error('JWT verification failed:', error);
+        return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
       }
     }
 
-    // Normal NextAuth.js authentication flow (for web app)
-    const session = await getServerSession(authOptions)
-    
+    // Fallback to NextAuth for web requests
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      console.log('❌ No valid session found');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      console.log('No valid session');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('✅ Valid NextAuth session found for user:', session.user.id);
-
-    // Get user's bookings for web app
-    const sessionUserBookings = await getUserBookingsById(session.user.id);
-    return NextResponse.json(sessionUserBookings);
-
+    console.log('Valid session for user:', session.user.id);
+    const bookings = await getUserBookingsById(session.user.id);
+    return NextResponse.json(bookings);
   } catch (error) {
-    console.error('Error fetching user bookings:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error fetching bookings:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

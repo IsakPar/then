@@ -1,0 +1,26 @@
+// Debug Configuration for LML App
+// This file defines environment variables for development builds
+
+// API Configuration
+BASE_API_URL = https://then-production.up.railway.app
+BASE_API_URL_DEV = http://localhost:3001
+
+// Stripe Configuration (Test Keys)
+STRIPE_PUBLISHABLE_KEY = pk_test_51234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+// Google OAuth Configuration
+GOOGLE_CLIENT_ID = your_google_client_id_here.apps.googleusercontent.com
+
+// App Configuration
+APP_DISPLAY_NAME = LML Debug
+BUNDLE_ID_SUFFIX = .debug
+
+// Feature Flags for Development
+ENABLE_DEBUG_LOGGING = YES
+ENABLE_NETWORK_LOGGING = YES
+ENABLE_MOCK_DATA = NO
+
+// Build Configuration
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+GCC_OPTIMIZATION_LEVEL = 0
+SWIFT_OPTIMIZATION_LEVEL = -Onone 

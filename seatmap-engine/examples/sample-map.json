@@ -1,0 +1,442 @@
+{
+  "id": "victoria-palace-theater",
+  "name": "Victoria Palace Theatre",
+  "type": "theater",
+  "viewBox": {
+    "x": 0,
+    "y": 0,
+    "width": 1000,
+    "height": 800
+  },
+  "stage": {
+    "id": "main-stage",
+    "name": "STAGE",
+    "position": { "x": 300, "y": 650 },
+    "dimensions": { "width": 400, "height": 80 },
+    "shape": "rectangle",
+    "orientation": "north"
+  },
+  "sections": [
+    {
+      "id": "grand-circle",
+      "name": "Grand Circle",
+      "type": "balcony",
+      "color": "#dc2626",
+      "priceLevel": 5,
+      "layout": {
+        "type": "curved",
+        "origin": { "x": 200, "y": 150 },
+        "rowCount": 8,
+        "seatsPerRow": 24,
+        "rowSpacing": 20,
+        "seatSpacing": 16,
+        "curve": {
+          "radius": 280,
+          "startAngle": -45,
+          "endAngle": 45,
+          "center": { "x": 500, "y": 400 }
+        }
+      },
+      "seats": [
+        {
+          "id": "gc-A-1",
+          "rowId": "A",
+          "seatNumber": "1",
+          "position": { "x": 320, "y": 170 },
+          "status": "available",
+          "price": 85,
+          "isAccessible": true,
+          "tags": []
+        },
+        {
+          "id": "gc-A-2",
+          "rowId": "A",
+          "seatNumber": "2",
+          "position": { "x": 336, "y": 168 },
+          "status": "available",
+          "price": 85,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "gc-A-3",
+          "rowId": "A",
+          "seatNumber": "3",
+          "position": { "x": 352, "y": 166 },
+          "status": "reserved",
+          "price": 85,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "gc-A-4",
+          "rowId": "A",
+          "seatNumber": "4",
+          "position": { "x": 368, "y": 164 },
+          "status": "available",
+          "price": 85,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "gc-A-5",
+          "rowId": "A",
+          "seatNumber": "5",
+          "position": { "x": 384, "y": 162 },
+          "status": "available",
+          "price": 85,
+          "isAccessible": false,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "id": "stalls-left",
+      "name": "Stalls Left",
+      "type": "orchestra",
+      "color": "#7c3aed",
+      "priceLevel": 4,
+      "layout": {
+        "type": "grid",
+        "origin": { "x": 150, "y": 350 },
+        "rowCount": 12,
+        "seatsPerRow": 12,
+        "rowSpacing": 25,
+        "seatSpacing": 18
+      },
+      "seats": [
+        {
+          "id": "sl-A-1",
+          "rowId": "A",
+          "seatNumber": "1",
+          "position": { "x": 150, "y": 350 },
+          "status": "available",
+          "price": 75,
+          "isAccessible": true,
+          "tags": ["aisle"]
+        },
+        {
+          "id": "sl-A-2",
+          "rowId": "A",
+          "seatNumber": "2",
+          "position": { "x": 168, "y": 350 },
+          "status": "available",
+          "price": 75,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sl-A-3",
+          "rowId": "A",
+          "seatNumber": "3",
+          "position": { "x": 186, "y": 350 },
+          "status": "available",
+          "price": 75,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sl-A-4",
+          "rowId": "A",
+          "seatNumber": "4",
+          "position": { "x": 204, "y": 350 },
+          "status": "selected",
+          "price": 75,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sl-A-5",
+          "rowId": "A",
+          "seatNumber": "5",
+          "position": { "x": 222, "y": 350 },
+          "status": "selected",
+          "price": 75,
+          "isAccessible": false,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "id": "stalls-center",
+      "name": "Stalls Center",
+      "type": "orchestra",
+      "color": "#059669",
+      "priceLevel": 5,
+      "layout": {
+        "type": "grid",
+        "origin": { "x": 350, "y": 350 },
+        "rowCount": 15,
+        "seatsPerRow": 16,
+        "rowSpacing": 25,
+        "seatSpacing": 18
+      },
+      "seats": [
+        {
+          "id": "sc-A-1",
+          "rowId": "A",
+          "seatNumber": "1",
+          "position": { "x": 350, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sc-A-2",
+          "rowId": "A",
+          "seatNumber": "2",
+          "position": { "x": 368, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sc-A-3",
+          "rowId": "A",
+          "seatNumber": "3",
+          "position": { "x": 386, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sc-A-4",
+          "rowId": "A",
+          "seatNumber": "4",
+          "position": { "x": 404, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sc-A-5",
+          "rowId": "A",
+          "seatNumber": "5",
+          "position": { "x": 422, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sc-A-6",
+          "rowId": "A",
+          "seatNumber": "6",
+          "position": { "x": 440, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sc-A-7",
+          "rowId": "A",
+          "seatNumber": "7",
+          "position": { "x": 458, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sc-A-8",
+          "rowId": "A",
+          "seatNumber": "8",
+          "position": { "x": 476, "y": 350 },
+          "status": "available",
+          "price": 95,
+          "isAccessible": false,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "id": "stalls-right",
+      "name": "Stalls Right",
+      "type": "orchestra",
+      "color": "#0891b2",
+      "priceLevel": 4,
+      "layout": {
+        "type": "grid",
+        "origin": { "x": 650, "y": 350 },
+        "rowCount": 12,
+        "seatsPerRow": 12,
+        "rowSpacing": 25,
+        "seatSpacing": 18
+      },
+      "seats": [
+        {
+          "id": "sr-A-1",
+          "rowId": "A",
+          "seatNumber": "1",
+          "position": { "x": 650, "y": 350 },
+          "status": "available",
+          "price": 75,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sr-A-2",
+          "rowId": "A",
+          "seatNumber": "2",
+          "position": { "x": 668, "y": 350 },
+          "status": "available",
+          "price": 75,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sr-A-3",
+          "rowId": "A",
+          "seatNumber": "3",
+          "position": { "x": 686, "y": 350 },
+          "status": "blocked",
+          "price": 75,
+          "isAccessible": false,
+          "tags": ["restricted-view"]
+        },
+        {
+          "id": "sr-A-4",
+          "rowId": "A",
+          "seatNumber": "4",
+          "position": { "x": 704, "y": 350 },
+          "status": "available",
+          "price": 75,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "sr-A-5",
+          "rowId": "A",
+          "seatNumber": "5",
+          "position": { "x": 722, "y": 350 },
+          "status": "available",
+          "price": 75,
+          "isAccessible": true,
+          "tags": ["aisle"]
+        }
+      ]
+    },
+    {
+      "id": "royal-circle-left",
+      "name": "Royal Circle Left",
+      "type": "mezzanine",
+      "color": "#ea580c",
+      "priceLevel": 3,
+      "layout": {
+        "type": "curved",
+        "origin": { "x": 100, "y": 250 },
+        "rowCount": 6,
+        "seatsPerRow": 18,
+        "rowSpacing": 22,
+        "seatSpacing": 16,
+        "curve": {
+          "radius": 220,
+          "startAngle": -60,
+          "endAngle": -15,
+          "center": { "x": 500, "y": 400 }
+        }
+      },
+      "seats": [
+        {
+          "id": "rcl-A-1",
+          "rowId": "A",
+          "seatNumber": "1",
+          "position": { "x": 180, "y": 280 },
+          "status": "available",
+          "price": 65,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "rcl-A-2",
+          "rowId": "A",
+          "seatNumber": "2",
+          "position": { "x": 196, "y": 276 },
+          "status": "available",
+          "price": 65,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "rcl-A-3",
+          "rowId": "A",
+          "seatNumber": "3",
+          "position": { "x": 212, "y": 272 },
+          "status": "available",
+          "price": 65,
+          "isAccessible": false,
+          "tags": []
+        }
+      ]
+    },
+    {
+      "id": "royal-circle-right",
+      "name": "Royal Circle Right",
+      "type": "mezzanine",
+      "color": "#ea580c",
+      "priceLevel": 3,
+      "layout": {
+        "type": "curved",
+        "origin": { "x": 700, "y": 250 },
+        "rowCount": 6,
+        "seatsPerRow": 18,
+        "rowSpacing": 22,
+        "seatSpacing": 16,
+        "curve": {
+          "radius": 220,
+          "startAngle": 15,
+          "endAngle": 60,
+          "center": { "x": 500, "y": 400 }
+        }
+      },
+      "seats": [
+        {
+          "id": "rcr-A-1",
+          "rowId": "A",
+          "seatNumber": "1",
+          "position": { "x": 788, "y": 272 },
+          "status": "available",
+          "price": 65,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "rcr-A-2",
+          "rowId": "A",
+          "seatNumber": "2",
+          "position": { "x": 804, "y": 276 },
+          "status": "available",
+          "price": 65,
+          "isAccessible": false,
+          "tags": []
+        },
+        {
+          "id": "rcr-A-3",
+          "rowId": "A",
+          "seatNumber": "3",
+          "position": { "x": 820, "y": 280 },
+          "status": "available",
+          "price": 65,
+          "isAccessible": false,
+          "tags": []
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "capacity": 1644,
+    "created": "2025-01-14T14:16:00.000Z",
+    "version": "1.0.0",
+    "venue": {
+      "address": "Victoria Street, London SW1E 5EA",
+      "city": "London",
+      "country": "UK",
+      "website": "https://www.victoriapalacetheatre.co.uk"
+    }
+  }
+} 

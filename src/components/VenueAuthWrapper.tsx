@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { getVenueCredentials } from '@/lib/venue-auth'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface AuthState {
   authenticated: boolean
   loading: boolean
   venueSlug?: string
+  venueId?: string
+  role?: string
   permissions?: string[]
-  isMasterAdmin?: boolean
+  userId?: string
 }
 
 interface VenueAuthWrapperProps {
@@ -18,9 +20,9 @@ interface VenueAuthWrapperProps {
 
 export default function VenueAuthWrapper({ children, requiredPermission = 'view' }: VenueAuthWrapperProps) {
   const [auth, setAuth] = useState<AuthState>({ authenticated: false, loading: true })
-  const [loginForm, setLoginForm] = useState({ password: '', venueSlug: '' })
+  const [loginForm, setLoginForm] = useState({ email: '', password: '', venueSlug: '' })
   const [loginError, setLoginError] = useState<string | null>(null)
-  const [showCredentials, setShowCredentials] = useState(false)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   useEffect(() => {
     checkAuthStatus()
@@ -28,7 +30,9 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/venue-auth')
+      const response = await fetch('/api/venue-auth-new', {
+        method: 'GET'
+      })
       const data = await response.json()
       
       if (data.success && data.authenticated) {
@@ -36,8 +40,10 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
           authenticated: true,
           loading: false,
           venueSlug: data.venueSlug,
+          venueId: data.venueId,
+          role: data.role,
           permissions: data.permissions,
-          isMasterAdmin: data.isMasterAdmin
+          userId: data.userId
         })
       } else {
         setAuth({ authenticated: false, loading: false })
@@ -51,13 +57,15 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError(null)
+    setIsLoggingIn(true)
 
     try {
-      const response = await fetch('/api/venue-auth', {
+      const response = await fetch('/api/venue-auth-new', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'login',
+          email: loginForm.email,
           password: loginForm.password,
           venueSlug: loginForm.venueSlug || undefined
         })
@@ -70,20 +78,25 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
           authenticated: true,
           loading: false,
           venueSlug: data.venueSlug,
+          venueId: data.venueId,
+          role: data.role,
           permissions: data.permissions,
-          isMasterAdmin: data.isMasterAdmin
+          userId: data.userId
         })
+        setLoginForm({ email: '', password: '', venueSlug: '' })
       } else {
         setLoginError(data.error || 'Authentication failed')
       }
     } catch (error) {
       setLoginError('Network error. Please try again.')
+    } finally {
+      setIsLoggingIn(false)
     }
   }
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/venue-auth', {
+      await fetch('/api/venue-auth-new', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'logout' })
@@ -97,59 +110,47 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
 
   const hasRequiredPermission = () => {
     if (!auth.authenticated) return false
-    if (auth.isMasterAdmin) return true
+    if (!requiredPermission) return true
+    if (auth.role === 'admin') return true // Admins have all permissions
     return auth.permissions?.includes(requiredPermission) || false
   }
 
   if (auth.loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
       </div>
     )
   }
 
   if (!auth.authenticated) {
-    const venueCredentials = getVenueCredentials()
-    
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-8 max-w-md w-full mx-4">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 0h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Venue Management Access</h1>
-            <p className="text-gray-600">Enter your password to access venue management</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Venue Management Access</h1>
+            <p className="text-gray-300">Enter your credentials to access the venue management system</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label htmlFor="venueSlug" className="block text-sm font-medium text-gray-700 mb-2">
-                Venue (Optional)
+              <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">
+                Email Address
               </label>
-              <select
-                id="venueSlug"
-                value={loginForm.venueSlug}
-                onChange={(e) => setLoginForm({ ...loginForm, venueSlug: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">All Venues (Master Access)</option>
-                {venueCredentials.map((venue) => (
-                  <option key={venue.slug} value={venue.slug}>
-                    {venue.slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="email"
+                id="email"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your email address"
+                required
+                disabled={isLoggingIn}
+              />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
                 Password
               </label>
               <input
@@ -157,49 +158,47 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
                 id="password"
                 value={loginForm.password}
                 onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Enter venue password"
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your password"
                 required
+                disabled={isLoggingIn}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="venueSlug" className="block text-sm font-medium text-gray-200 mb-2">
+                Venue (Optional)
+              </label>
+              <input
+                type="text"
+                id="venueSlug"
+                value={loginForm.venueSlug}
+                onChange={(e) => setLoginForm({ ...loginForm, venueSlug: e.target.value })}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter venue slug (leave blank for any venue)"
+                disabled={isLoggingIn}
               />
             </div>
 
             {loginError && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-red-600 text-sm">{loginError}</p>
+              <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
+                <p className="text-red-100 text-sm">{loginError}</p>
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
+              disabled={isLoggingIn}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 text-white py-3 px-4 rounded-lg font-medium transition-colors"
             >
-              Access Venue Management
+              {isLoggingIn ? 'Authenticating...' : 'Access Venue Management'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              onClick={() => setShowCredentials(!showCredentials)}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
-            >
-              {showCredentials ? 'Hide' : 'Show'} Test Credentials
-            </button>
-            
-            {showCredentials && (
-              <div className="mt-4 bg-gray-50 rounded-lg p-4 text-left">
-                <h3 className="text-sm font-medium text-gray-900 mb-2">Test Credentials:</h3>
-                <div className="space-y-2 text-xs text-gray-600">
-                  <div>
-                    <strong>Master Admin:</strong> admin2024master!
-                  </div>
-                  {venueCredentials.map((venue) => (
-                    <div key={venue.slug}>
-                      <strong>{venue.slug}:</strong> {venue.password}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <p className="text-gray-400 text-sm">
+              🔐 Secure database-driven authentication
+            </p>
           </div>
         </div>
       </div>
@@ -208,22 +207,26 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
 
   if (!hasRequiredPermission()) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-          <p className="text-gray-600 mb-6">
-            You don't have the required permission: {requiredPermission}
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 p-8 max-w-md w-full mx-4 text-center">
+          <div className="text-red-400 text-6xl mb-4">🚫</div>
+          <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
+          <p className="text-gray-300 mb-6">
+            You don't have the required permission ({requiredPermission}) to access this area.
           </p>
+          <div className="bg-gray-800/50 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-gray-300">
+              <strong>Your Access:</strong><br/>
+              Venue: {auth.venueSlug}<br/>
+              Role: {auth.role}<br/>
+              Permissions: {auth.permissions?.join(', ') || 'None'}
+            </p>
+          </div>
           <button
             onClick={handleLogout}
-            className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors"
+            className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
           >
-            Logout
+            Logout & Try Different Account
           </button>
         </div>
       </div>
@@ -232,22 +235,19 @@ export default function VenueAuthWrapper({ children, requiredPermission = 'view'
 
   return (
     <div>
-      {/* Auth Status Bar */}
-      <div className="bg-purple-600 text-white px-4 py-2 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <span className="text-sm">
-            {auth.isMasterAdmin ? '🔑 Master Admin' : `🏛️ ${auth.venueSlug}`}
+      {/* Authentication Status Bar */}
+      <div className="bg-green-600 text-white px-4 py-2 text-sm">
+        <div className="flex justify-between items-center">
+          <span>
+            ✅ Authenticated as {auth.role} for {auth.venueSlug} 
           </span>
-          <span className="text-xs bg-purple-500 px-2 py-1 rounded">
-            {auth.permissions?.join(', ')}
-          </span>
+          <button
+            onClick={handleLogout}
+            className="text-green-100 hover:text-white underline"
+          >
+            Logout
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-sm bg-purple-700 hover:bg-purple-800 px-3 py-1 rounded transition-colors"
-        >
-          Logout
-        </button>
       </div>
       
       {/* Protected Content */}

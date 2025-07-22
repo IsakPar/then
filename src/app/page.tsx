@@ -90,7 +90,7 @@ export default function HomePage() {
         };
       }) || [];
 
-      // Add mock shows for display only (no booking functionality)
+      // Add mock shows for display only (no booking functionality) - Hamilton removed as it's now real data
       const mockShows = [
         {
           id: 'mock-chicago',

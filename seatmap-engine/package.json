@@ -1,0 +1,13 @@
+{
+  "name": "seatmap-engine",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Professional seat map rendering engine",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["seatmap", "theater", "seats", "svg", "rendering"],
+  "author": "",
+  "license": "ISC"
+} 

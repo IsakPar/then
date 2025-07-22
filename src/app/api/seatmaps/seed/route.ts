@@ -1,83 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
+// import { seedSeatMaps } from '@/lib/db/queries';
 import { db } from '@/lib/db/connection';
-import { seatMaps, sections } from '@/lib/db/schema';
-import { getAllSeatMapTemplates } from '@/lib/seatmaps/generic';
+// import { getAllSeatMapTemplates } from '@/lib/seatmaps/generic';
+// import { PROFESSIONAL_THEATER } from '@/lib/seatmaps/generic/professional-theater';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    console.log('🌱 Seeding database with all comprehensive seat map templates');
+    console.log('🔄 Seatmap seeding temporarily disabled due to missing dependencies')
+    
+    return NextResponse.json({ 
+      error: 'Seatmap seeding temporarily disabled - missing generic seatmap files',
+      status: 'disabled'
+    }, { status: 503 })
+
+    /*
+    // TODO: Re-enable once missing files are created
+    console.log('🌱 Starting seatmap seeding process...');
     
     // Get all available seat map templates
-    const allTemplates = getAllSeatMapTemplates();
+    const templates = getAllSeatMapTemplates();
+    console.log(`📋 Found ${templates.length} seat map templates`);
     
-    // Use all available templates for comprehensive seeding
-    const seatMapConfigs = allTemplates;
+    const results = [];
     
-    const createdSeatMaps = [];
-    
-    for (const config of seatMapConfigs) {
-      console.log(`🗺️ Creating seat map: ${config.name}`);
+    for (const template of templates) {
+      console.log(`🎭 Seeding seat map: ${template.name}`);
       
-      // Create seat map
-      const [seatMap] = await db
-        .insert(seatMaps)
-        .values({
-          name: config.name,
-          description: config.description,
-          layoutConfig: config as any,
-          totalCapacity: config.totalCapacity,
-          svgViewbox: config.svgViewbox,
-        })
-        .returning();
-        
-      console.log(`✅ Created seat map: ${seatMap.id}`);
-      
-      // Create sections for this seat map
-      const sectionsToCreate = config.sections.map((section, index) => ({
-        seatMapId: seatMap.id,
-        name: section.name,
-        displayName: section.name,
-        colorHex: section.colorHex || '#3B82F6',
-        basePricePence: section.defaultPrice || 5000,
-        seatPattern: {
-          rows: section.rows || 10,
-          cols: section.cols || 15,
-          shape: section.shape || 'grid'
-        },
-        positionConfig: {
-          offset: section.offset || { x: 0, y: 0 },
-          seatSpacing: section.seatSpacing || 22,
-          rowSpacing: section.rowSpacing || 20
-        },
-        isAccessible: false,
-        sortOrder: index,
-      }));
-      
-      await db.insert(sections).values(sectionsToCreate);
-      console.log(`✅ Created ${sectionsToCreate.length} sections for ${config.name}`);
-      
-      createdSeatMaps.push({
-        seatMap,
-        sectionCount: sectionsToCreate.length
-      });
+      try {
+        const result = await seedSeatMaps(template);
+        results.push({
+          name: template.name,
+          success: true,
+          seatMapId: result.seatMapId,
+          sections: result.sectionsCreated,
+          seats: result.seatsCreated
+        });
+        console.log(`✅ Successfully seeded ${template.name}`);
+      } catch (error) {
+        console.error(`❌ Failed to seed ${template.name}:`, error);
+        results.push({
+          name: template.name,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
     }
     
-    console.log(`🎉 Successfully seeded ${createdSeatMaps.length} comprehensive seat map templates`);
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+    
+    console.log(`🎉 Seeding complete: ${successful.length} successful, ${failed.length} failed`);
     
     return NextResponse.json({
       success: true,
-      message: `Created ${createdSeatMaps.length} comprehensive seat map templates`,
-      seatMaps: createdSeatMaps
+      message: `Seeded ${successful.length} seat maps successfully`,
+      results,
+      summary: {
+        total: results.length,
+        successful: successful.length,
+        failed: failed.length
+      }
     });
+    */
     
   } catch (error) {
-    console.error('❌ Error seeding seat maps:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to seed seat maps',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    console.error('❌ Error in seatmap seeding:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to seed seat maps',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 } 

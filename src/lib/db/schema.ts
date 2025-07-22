@@ -248,6 +248,18 @@ export const bookingSeats = pgTable('booking_seats', {
   uniqueSeat: unique().on(table.seatId), // One booking per seat
 }));
 
+// Hardcoded Seat Mappings (Maps hardcoded seat IDs to real database UUIDs)
+export const hardcodedSeatMappings = pgTable('hardcoded_seat_mappings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  showId: uuid('show_id').notNull().references(() => shows.id, { onDelete: 'cascade' }),
+  hardcodedSeatId: text('hardcoded_seat_id').notNull(), // e.g., "back-1-14"
+  realSeatId: uuid('real_seat_id').notNull().references(() => seats.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueMapping: unique().on(table.showId, table.hardcodedSeatId),
+  showHardcodedId: index('idx_mappings_show_hardcoded').on(table.showId, table.hardcodedSeatId),
+}));
+
 // ============================================================================
 // RELATIONS
 // ============================================================================
@@ -395,6 +407,9 @@ export type BookingStatus = typeof bookings.status.enumValues[number];
 
 export type BookingSeat = typeof bookingSeats.$inferSelect;
 export type NewBookingSeat = typeof bookingSeats.$inferInsert; 
+
+export type HardcodedSeatMapping = typeof hardcodedSeatMappings.$inferSelect;
+export type NewHardcodedSeatMapping = typeof hardcodedSeatMappings.$inferInsert;
 
 // Auth types
 export type User = typeof users.$inferSelect;

@@ -15,7 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import apiClient from '../lib/api/client';
 import { Show, Seat } from '../types';
-import SeatMap from '../components/SeatMap';
+import HardcodedSeatMap from '../components/HardcodedSeatMap';
 import { SeatSelectionScreenProps } from '../types/navigation';
 
 export default function SeatSelectionScreen({ navigation, route }: SeatSelectionScreenProps) {
@@ -26,6 +26,9 @@ export default function SeatSelectionScreen({ navigation, route }: SeatSelection
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [isBooking, setIsBooking] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
+  
+  // HamiltonSeatMap doesn't need external data loading
+  const [seatMapLoading, setSeatMapLoading] = useState(false);
 
   // ============================================================================
   // DATA LOADING
@@ -43,6 +46,34 @@ export default function SeatSelectionScreen({ navigation, route }: SeatSelection
     }
   };
 
+  // HamiltonSeatMap generates its own seat data - no external loading needed
+
+  // Type adapter functions for HamiltonSeatMap
+  const convertToHamiltonSeat = (seat: Seat): any => ({
+    id: seat.id,
+    row: seat.row_letter,
+    number: seat.seat_number,
+    section: seat.sectionId,
+    price: seat.pricePence,
+    status: seat.status,
+    position: seat.position || { x: 0, y: 0 }
+  });
+
+  const convertFromHamiltonSeat = (hamiltonSeat: any): Seat => ({
+    id: hamiltonSeat.id,
+    showId: showId,
+    sectionId: hamiltonSeat.section,
+    row_letter: hamiltonSeat.row,
+    seat_number: hamiltonSeat.number,
+    pricePence: hamiltonSeat.price,
+    status: hamiltonSeat.status,
+    position: hamiltonSeat.position,
+    section_name: hamiltonSeat.section,
+    color_hex: '#3B82F6', // Default color
+    display_name: hamiltonSeat.section,
+    isAccessible: false
+  });
+
   useEffect(() => {
     if (!show.seat_pricing) {
       loadShowDetails();
@@ -51,6 +82,16 @@ export default function SeatSelectionScreen({ navigation, route }: SeatSelection
 
   // ============================================================================
   // SEAT SELECTION LOGIC
+  // ============================================================================
+
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
+
+  // No useEffect needed for seat data loading since HamiltonSeatMap is self-contained
+
+  // ============================================================================
+  // SEAT SELECTION HANDLERS
   // ============================================================================
 
   const handleSeatSelect = (seat: Seat) => {
@@ -215,11 +256,34 @@ export default function SeatSelectionScreen({ navigation, route }: SeatSelection
 
         {/* Seat Map */}
         <View style={styles.seatMapContainer}>
-          <SeatMap
-            showId={showId}
-            onSeatSelect={handleSeatSelect}
+          <HardcodedSeatMap
+            onSeatSelect={(seatId) => {
+              // Create a mock seat object from the seatId
+              const parts = seatId.split('-')
+                             const mockSeat: Seat = {
+                 id: seatId,
+                 showId: showId,
+                 sectionId: parts[0],
+                 section_name: parts[0] === 'premium' ? 'Premium Orchestra' : 
+                             parts[0] === 'sideA' || parts[0] === 'sideB' ? 'Side Section' :
+                             parts[0] === 'middle' ? 'Mezzanine' : 'Balcony',
+                 row_letter: parts[1],
+                 seat_number: parseInt(parts[2]),
+                 pricePence: parts[0] === 'premium' ? 8500 : 
+                            parts[0] === 'sideA' || parts[0] === 'sideB' ? 6500 :
+                            parts[0] === 'middle' ? 6500 : 4500,
+                 status: 'available',
+                 position: { x: 0, y: 0 },
+                 isAccessible: false,
+                 notes: undefined,
+                 color_hex: parts[0] === 'premium' ? '#ffd700' : 
+                           parts[0] === 'sideA' || parts[0] === 'sideB' ? '#66bb6a' :
+                           parts[0] === 'middle' ? '#ab47bc' : '#ff7043'
+               }
+              handleSeatSelect(mockSeat)
+            }}
             onSeatDeselect={handleSeatDeselect}
-            selectedSeats={selectedSeats}
+            selectedSeats={selectedSeats.map(seat => seat.id)}
           />
         </View>
 
@@ -549,5 +613,27 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  loadingText: {
+    color: '#94a3b8',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 16,
+    textAlign: 'center',
   },
 }); 

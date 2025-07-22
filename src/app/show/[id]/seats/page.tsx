@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useReducer } from 'react'
+import { useState, useEffect, useCallback, useReducer, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import SeatMap from '@/components/SeatMap'
-import { SeatMapErrorBoundary } from '@/components/SeatMapErrorBoundary'
+import HardcodedSeatMap from '@/components/HardcodedSeatMap'
+import { SeatData } from '@/lib/seatmaps/CoordinateEngine'
 
 // ============================================================================
 // UNIFIED SEAT IDENTIFICATION (shared with SeatMap)
@@ -85,6 +85,8 @@ interface SeatSelectionState {
   loading: boolean
   selectedSeats: SelectedSeat[]
   purchasing: boolean
+  seats: SeatData[]
+  seatsLoading: boolean
 }
 
 type SeatSelectionAction =
@@ -94,6 +96,8 @@ type SeatSelectionAction =
   | { type: 'ADD_SEAT'; seat: SelectedSeat }
   | { type: 'REMOVE_SEAT'; seatId: string }
   | { type: 'CLEAR_SEATS' }
+  | { type: 'SET_SEATS'; seats: SeatData[] }
+  | { type: 'SET_SEATS_LOADING'; loading: boolean }
 
 function seatSelectionReducer(state: SeatSelectionState, action: SeatSelectionAction): SeatSelectionState {
   switch (action.type) {
@@ -118,6 +122,10 @@ function seatSelectionReducer(state: SeatSelectionState, action: SeatSelectionAc
       }
     case 'CLEAR_SEATS':
       return { ...state, selectedSeats: [] }
+    case 'SET_SEATS':
+      return { ...state, seats: action.seats }
+    case 'SET_SEATS_LOADING':
+      return { ...state, seatsLoading: action.loading }
     default:
       return state
   }
@@ -127,19 +135,32 @@ function seatSelectionReducer(state: SeatSelectionState, action: SeatSelectionAc
 // MAIN COMPONENT
 // ============================================================================
 
+// Add mount counter outside component to track actual mounts
+let mountCounter = 0;
+
 export default function SeatSelectionPage() {
   const params = useParams()
   const router = useRouter()
   const showId = params.id as string
   
-  // Debug logging
-  console.log('🎫 [SeatSelection] Component mounted, params:', params, 'showId:', showId)
+  // Request deduplication
+  const activeRequests = useRef(new Set<string>())
+  
+  // Track actual mounts only
+  const mountRef = useRef(false);
+  if (!mountRef.current) {
+    mountCounter++;
+    mountRef.current = true;
+    console.log(`🎫 [SeatSelection] Component mounted (${mountCounter}), params:`, params, 'showId:', showId)
+  }
   
   const [state, dispatch] = useReducer(seatSelectionReducer, {
     show: null,
     loading: true,
     selectedSeats: [],
-    purchasing: false
+    purchasing: false,
+    seats: [],
+    seatsLoading: false
   })
 
   // ============================================================================
@@ -149,7 +170,15 @@ export default function SeatSelectionPage() {
   const loadShow = useCallback(async () => {
     if (!showId) return;
 
+    // Request deduplication
+    const requestKey = `show-${showId}`;
+    if (activeRequests.current.has(requestKey)) {
+      console.log('🎫 [SeatSelection] Show request already in progress, skipping:', showId);
+      return;
+    }
+
     try {
+      activeRequests.current.add(requestKey);
       dispatch({ type: 'SET_LOADING', loading: true });
       
       console.log('🎫 [SeatSelection] Loading show data for:', showId);
@@ -194,7 +223,61 @@ export default function SeatSelectionPage() {
       console.error('🎫 [SeatSelection] Error loading show:', error)
       alert('Failed to load show details. Please try again.')
     } finally {
+      activeRequests.current.delete(requestKey);
       dispatch({ type: 'SET_LOADING', loading: false })
+    }
+  }, [showId])
+
+  const loadSeats = useCallback(async () => {
+    if (!showId) return;
+
+    // Request deduplication
+    const requestKey = `seats-${showId}`;
+    if (activeRequests.current.has(requestKey)) {
+      console.log('🎭 [EnterpriseSeatMap] Seats request already in progress, skipping:', showId);
+      return;
+    }
+
+    try {
+      activeRequests.current.add(requestKey);
+      dispatch({ type: 'SET_SEATS_LOADING', loading: true });
+      
+      console.log('🎭 [EnterpriseSeatMap] Loading seats for show:', showId);
+
+      // Load seats data for EnterpriseSeatMap
+      const seatsResponse = await fetch(`/api/shows/${showId}/seats`);
+      if (!seatsResponse.ok) {
+        throw new Error('Failed to fetch seats data')
+      }
+      
+      const seatsData = await seatsResponse.json()
+      console.log('🎭 [EnterpriseSeatMap] Loaded seats data:', seatsData.length, 'seats')
+
+      // Transform API seats to SeatData format for EnterpriseSeatMap
+      const transformedSeats: SeatData[] = seatsData.map((seat: any) => ({
+        id: seat.id,
+        position: seat.position || { x: 0, y: 0 }, // Fallback if no position
+        section: {
+          id: seat.section_id,
+          name: seat.section_name,
+          display_name: seat.section_display_name || seat.section_name,
+          color_hex: seat.section_color_hex || '#3b82f6'
+        },
+        row_letter: seat.row_letter,
+        seat_number: seat.seat_number,
+        status: seat.status as 'available' | 'selected' | 'booked' | 'reserved',
+        price_pence: seat.price_pence || 0,
+        is_accessible: seat.is_accessible
+      }))
+
+      console.log('🎭 [EnterpriseSeatMap] Transformed seats for EnterpriseSeatMap:', transformedSeats.length)
+      dispatch({ type: 'SET_SEATS', seats: transformedSeats })
+    } catch (error) {
+      console.error('🎭 [EnterpriseSeatMap] Error loading seats:', error)
+      // Don't show alert for seats loading error, just log it
+    } finally {
+      activeRequests.current.delete(requestKey);
+      dispatch({ type: 'SET_SEATS_LOADING', loading: false })
     }
   }, [showId])
 
@@ -205,23 +288,41 @@ export default function SeatSelectionPage() {
   const handleSeatSelect = useCallback((seat: any) => {
     console.log('🎫 [SeatSelection] handleSeatSelect called with:', seat);
     
-    // Find the price from sections using the correct field name
-    const section = state.show?.seat_pricing?.find(sp => sp.category_id === seat.section_id) // Changed from venue_section_id
-    if (!section) {
-      console.log('❌ [SeatSelection] No section found for section_id:', seat.section_id);
-      return;
+    // For hardcoded map, create section pricing based on seat section
+    let section;
+    const sectionName = seat.section_id || seat.id?.split('-')[0];
+    
+    // Define hardcoded pricing for each section
+    switch (sectionName) {
+      case 'premium':
+        section = { category_id: 'premium', category_name: 'Premium Orchestra', price: 8500 }; // £85
+        break;
+      case 'sideA':
+      case 'sideB':
+        section = { category_id: 'side', category_name: 'Side Section', price: 6500 }; // £65
+        break;
+      case 'middle':
+        section = { category_id: 'middle', category_name: 'Mezzanine', price: 6500 }; // £65
+        break;
+      case 'back':
+        section = { category_id: 'back', category_name: 'Balcony', price: 4500 }; // £45
+        break;
+      default:
+        section = { category_id: 'general', category_name: 'General Admission', price: 4500 }; // £45
     }
 
     // Use unified row parsing with correct field name
-    const rowNumber = SeatIdentifier.parseRowNumber(seat.row_letter); // Changed from row_name
+    const rowNumber = typeof seat.row_letter === 'string' ? 
+      SeatIdentifier.parseRowNumber(seat.row_letter) : 
+      parseInt(seat.row_letter) || 1;
 
     const newSeat: SelectedSeat = {
       databaseSeatId: seat.id,
-      categoryId: seat.section_id, // Changed from venue_section_id
+      categoryId: section.category_id,
       categoryName: section.category_name,
       price: section.price,
-      section: seat.row_letter, // Keep original format for display, changed from row_name
-      row: rowNumber, // Parsed number
+      section: seat.row_letter || rowNumber.toString(),
+      row: rowNumber,
       seat: seat.seat_number,
       sectionType: section.category_name.toLowerCase()
     }
@@ -307,12 +408,19 @@ export default function SeatSelectionPage() {
   useEffect(() => {
     console.log('🎫 [SeatSelection] useEffect triggered, showId:', showId)
     if (showId) {
-      console.log('🎫 [SeatSelection] Calling loadShow()')
+      console.log('🎫 [SeatSelection] Calling loadShow() - using hardcoded seat map')
       loadShow()
     } else {
       console.log('❌ [SeatSelection] No showId, not loading')
     }
-  }, [showId, loadShow])
+  }, [showId]) // Only showId as dependency to avoid infinite re-renders
+
+  // Track unmounting
+  useEffect(() => {
+    return () => {
+      console.log('🎫 [SeatSelection] Component unmounting')
+    }
+  }, [])
 
   // ============================================================================
   // RENDER
@@ -388,44 +496,68 @@ export default function SeatSelectionPage() {
         </div>
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Advanced Seat Map */}
+          {/* Enterprise Seat Map */}
           <div className="lg:col-span-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-              <h2 className="text-xl font-bold text-white mb-4">Select Your Seats</h2>
-              <div className="w-full" style={{ aspectRatio: '5/4', minHeight: '350px', maxHeight: '65vh' }}>
-                <SeatMapErrorBoundary
-                  onError={(error, errorInfo) => {
-                    console.error('🚨 [SeatSelection] Seat map error:', error)
-                    // Could integrate with error tracking here
-                  }}
-                >
-                  <div className="w-full h-full">
-                    <SeatMap
-                      showId={showId}
-                      onSeatSelect={handleSeatSelect}
-                      onSeatDeselect={handleSeatDeselect}
-                      selectedSeats={state.selectedSeats.map(s => ({
-                        id: s.databaseSeatId,
-                        row_letter: s.section, // Map section back to row_letter
-                        seat_number: s.seat,
-                        status: 'available' as const,
-                        section_id: s.categoryId
-                      }))}
-                    />
+            <div className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">Select Your Seats</h2>
+                <div className="flex items-center space-x-4">
+                  <div className="text-sm text-gray-300">
+                    {state.seats.length} seats available
                   </div>
-                </SeatMapErrorBoundary>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-green-400">Live</span>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full bg-slate-800/50 rounded-xl p-4 border border-slate-700/30" style={{ aspectRatio: '5/4', minHeight: '400px', maxHeight: '65vh' }}>
+                <div className="w-full h-full relative">
+                  <HardcodedSeatMap
+                    selectedSeats={state.selectedSeats.map(s => s.databaseSeatId)}
+                    onSeatSelect={(seatId) => {
+                      console.log('🎭 [HardcodedSeatMap] Seat selected:', seatId)
+                      // Create a mock seat object for the hardcoded map
+                      const mockSeat = {
+                        id: seatId,
+                        section_id: seatId.split('-')[0],
+                        row_letter: seatId.split('-')[1],
+                        seat_number: parseInt(seatId.split('-')[2]),
+                        status: 'available'
+                      }
+                      handleSeatSelect(mockSeat)
+                    }}
+                    onSeatDeselect={(seatId) => {
+                      console.log('🎭 [HardcodedSeatMap] Seat deselected:', seatId)
+                      handleSeatDeselect(seatId)
+                    }}
+                    className="rounded-lg overflow-hidden"
+                  />
+                  </div>
               </div>
             </div>
           </div>
 
           {/* Seat Selection Summary */}
           <div className="lg:col-span-2">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 sticky top-4">
-              <h2 className="text-xl font-bold text-white mb-6">Your Selection</h2>
+            <div className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 shadow-2xl sticky top-4">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">Your Selection</h2>
+                {state.selectedSeats.length > 0 && (
+                  <div className="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full text-sm font-medium">
+                    {state.selectedSeats.length} selected
+                  </div>
+                )}
+              </div>
               
               {state.selectedSeats.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
-                  <p className="text-lg mb-2">No seats selected</p>
+                  <div className="mb-4">
+                    <svg className="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-lg mb-2 font-medium">No seats selected</p>
                   <p className="text-sm">Click on available seats in the map to select them</p>
                 </div>
               ) : (
@@ -433,9 +565,9 @@ export default function SeatSelectionPage() {
                   {/* Selected Seats List */}
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {state.selectedSeats.map((seat, index) => (
-                      <div key={`${seat.categoryId}-${seat.row}-${seat.seat}`} className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                      <div key={`${seat.categoryId}-${seat.row}-${seat.seat}`} className="flex items-center justify-between bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg p-4 border border-slate-600/30 hover:border-slate-500/50 transition-colors">
                         <div className="flex-1">
-                          <div className="font-medium text-white">
+                          <div className="font-semibold text-white mb-1">
                             {seat.categoryName}
                           </div>
                           <div className="text-sm text-gray-300">
@@ -443,12 +575,12 @@ export default function SeatSelectionPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold text-white">
+                          <div className="font-bold text-white text-lg">
                             £{(seat.price / 100).toFixed(2)}
                           </div>
                           <button
                             onClick={() => handleSeatDeselect(seat.databaseSeatId)}
-                            className="text-red-400 hover:text-red-300 text-xs mt-1"
+                            className="text-red-400 hover:text-red-300 text-xs mt-1 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded transition-colors"
                           >
                             Remove
                           </button>
@@ -469,36 +601,74 @@ export default function SeatSelectionPage() {
                   <button
                     onClick={proceedToCheckout}
                     disabled={state.purchasing}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-lg hover:shadow-xl border border-blue-500/20"
                   >
                     {state.purchasing ? (
                       <div className="flex items-center justify-center gap-3">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Processing...</span>
+                        <span>Processing Payment...</span>
                       </div>
                     ) : (
-                      `Proceed to Checkout • £${(getTotalPrice() / 100).toFixed(2)}`
+                      <div className="flex items-center justify-center gap-3">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        <span>Proceed to Checkout • £{(getTotalPrice() / 100).toFixed(2)}</span>
+                      </div>
                     )}
                   </button>
                 </div>
               )}
 
               {/* Pricing Guide */}
-              <div className="mt-8 pt-6 border-t border-white/20">
-                <h3 className="text-lg font-semibold text-white mb-4">Pricing Guide</h3>
-                <div className="space-y-2">
-                  {state.show.seat_pricing.map((category) => (
-                    <div key={category.category_id} className="flex justify-between items-center text-sm">
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded"
-                          style={{ backgroundColor: category.color_code }}
-                        ></div>
-                        <span className="text-gray-300">{category.category_name}</span>
+              <div className="mt-8 pt-6 border-t border-slate-700/50">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                  Pricing Guide
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-white/20" style={{ backgroundColor: '#ffd700' }}></div>
+                      <div>
+                        <div className="text-gray-300 font-medium">Premium Orchestra</div>
+                        <div className="text-gray-500 text-xs">150 seats</div>
                       </div>
-                      <span className="text-white font-medium">£{(category.price / 100).toFixed(2)}</span>
                     </div>
-                  ))}
+                    <span className="text-white font-bold">£85.00</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-white/20" style={{ backgroundColor: '#66bb6a' }}></div>
+                      <div>
+                        <div className="text-gray-300 font-medium">Side Sections</div>
+                        <div className="text-gray-500 text-xs">100 seats</div>
+                      </div>
+                    </div>
+                    <span className="text-white font-bold">£65.00</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-white/20" style={{ backgroundColor: '#ab47bc' }}></div>
+                      <div>
+                        <div className="text-gray-300 font-medium">Mezzanine</div>
+                        <div className="text-gray-500 text-xs">150 seats</div>
+                      </div>
+                    </div>
+                    <span className="text-white font-bold">£65.00</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-800/30 rounded-lg p-3 border border-slate-700/30">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-white/20" style={{ backgroundColor: '#ff7043' }}></div>
+                      <div>
+                        <div className="text-gray-300 font-medium">Balcony</div>
+                        <div className="text-gray-500 text-xs">102 seats</div>
+                      </div>
+                    </div>
+                    <span className="text-white font-bold">£45.00</span>
+                  </div>
                 </div>
               </div>
             </div>

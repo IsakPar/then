@@ -427,7 +427,7 @@ class ApiClient {
       console.log('🎭 Transformed shows:', transformedShows.length, 'shows');
       console.log('🎭 Sample transformed show:', transformedShows[0]);
       
-      // Add mock shows for display (matching web app)
+      // Add mock shows for display (matching web app) - Hamilton removed as it's now real data
       const mockShows: Show[] = [
         {
           id: 'mock-chicago',
@@ -529,7 +529,7 @@ class ApiClient {
     } catch (error) {
       console.error('🎭 Error fetching shows, returning mock shows only:', error);
       
-      // If API fails, return mock shows only
+      // If API fails, return mock shows only - Hamilton removed as it's now real data
       const mockShows: Show[] = [
         {
           id: 'mock-chicago',
