@@ -1,3 +1,5 @@
+"use client";
+
 import HardcodedSeatMap from '@/components/HardcodedSeatMap';
 import { useState } from 'react';
 
