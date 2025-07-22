@@ -15,7 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import apiClient from '../lib/api/client';
 import { Show, Seat } from '../types';
-import HardcodedSeatMap from '../components/HardcodedSeatMap';
+import SeatMap from '../components/SeatMap';
 import { SeatSelectionScreenProps } from '../types/navigation';
 
 export default function SeatSelectionScreen({ navigation, route }: SeatSelectionScreenProps) {
@@ -256,34 +256,11 @@ export default function SeatSelectionScreen({ navigation, route }: SeatSelection
 
         {/* Seat Map */}
         <View style={styles.seatMapContainer}>
-          <HardcodedSeatMap
-            onSeatSelect={(seatId) => {
-              // Create a mock seat object from the seatId
-              const parts = seatId.split('-')
-                             const mockSeat: Seat = {
-                 id: seatId,
-                 showId: showId,
-                 sectionId: parts[0],
-                 section_name: parts[0] === 'premium' ? 'Premium Orchestra' : 
-                             parts[0] === 'sideA' || parts[0] === 'sideB' ? 'Side Section' :
-                             parts[0] === 'middle' ? 'Mezzanine' : 'Balcony',
-                 row_letter: parts[1],
-                 seat_number: parseInt(parts[2]),
-                 pricePence: parts[0] === 'premium' ? 8500 : 
-                            parts[0] === 'sideA' || parts[0] === 'sideB' ? 6500 :
-                            parts[0] === 'middle' ? 6500 : 4500,
-                 status: 'available',
-                 position: { x: 0, y: 0 },
-                 isAccessible: false,
-                 notes: undefined,
-                 color_hex: parts[0] === 'premium' ? '#ffd700' : 
-                           parts[0] === 'sideA' || parts[0] === 'sideB' ? '#66bb6a' :
-                           parts[0] === 'middle' ? '#ab47bc' : '#ff7043'
-               }
-              handleSeatSelect(mockSeat)
-            }}
+          <SeatMap
+            showId={showId}
+            onSeatSelect={handleSeatSelect}
             onSeatDeselect={handleSeatDeselect}
-            selectedSeats={selectedSeats.map(seat => seat.id)}
+            selectedSeats={selectedSeats}
           />
         </View>
 

@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # 🌐 Main Web Application (Next.js)
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"  # iOS app will connect to localhost:3001
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_APP_URL=http://localhost:3001
+      - DATABASE_URL=${RAILWAY_DATABASE_URL}  # Reuse Railway DB
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+    volumes:
+      - ./src:/app/src  # Hot reload for source changes
+      - ./public:/app/public
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./next.config.js:/app/next.config.js
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./tsconfig.json:/app/tsconfig.json
+    depends_on:
+      - redis
+    networks:
+      - lml-network
+    restart: unless-stopped
+    command: npm run dev
+
+  # 🔄 Redis for Session Management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - lml-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # 🗄️ Local PostgreSQL (for development data/testing)
+  postgres-local:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: lml_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - lml-network
+    restart: unless-stopped
+
+  # 🛠️ Database Admin Interface
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres-local
+    networks:
+      - lml-network
+    restart: unless-stopped
+
+  # 📧 Email Testing (Mailpit)
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - lml-network
+    restart: unless-stopped
+
+  # 🔍 Development Tools Container
+  dev-tools:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    networks:
+      - lml-network
+    command: tail -f /dev/null  # Keep container running
+
+volumes:
+  postgres_local_data:
+  redis_data:
+
+networks:
+  lml-network:
+    driver: bridge
+
+# 🚀 Quick Commands:
+# docker-compose up -d          # Start all services
+# docker-compose logs web       # View web app logs  
+# docker-compose exec web bash  # Enter web container
+# docker-compose down           # Stop all services 

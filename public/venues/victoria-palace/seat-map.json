@@ -1,0 +1,329 @@
+{
+  "layout": {
+    "type": "curved",
+    "viewport": {
+      "width": 1200,
+      "height": 800,
+      "scale": 1.0
+    },
+    "stage": {
+      "x": 500,
+      "y": 50,
+      "width": 200,
+      "height": 40,
+      "label": "STAGE"
+    },
+    "coordinate_system": "svg",
+    "background_image": null
+  },
+  "sections": [
+    {
+      "id": "stalls",
+      "name": "Stalls",
+      "display_name": "Stalls",
+      "color_hex": "#8B5CF6",
+      "capacity": 600,
+      "accessibility_info": "Wheelchair accessible. Step-free access available.",
+      "pricing_tier": "premium",
+      "level": 0,
+      "section_type": "orchestra",
+      "view_quality": "excellent"
+    },
+    {
+      "id": "dress-circle",
+      "name": "Dress Circle",
+      "display_name": "Dress Circle", 
+      "color_hex": "#3B82F6",
+      "capacity": 350,
+      "accessibility_info": "Limited wheelchair access. Please contact box office.",
+      "pricing_tier": "standard",
+      "level": 1,
+      "section_type": "balcony",
+      "view_quality": "excellent"
+    },
+    {
+      "id": "upper-circle",
+      "name": "Upper Circle",
+      "display_name": "Upper Circle",
+      "color_hex": "#10B981",
+      "capacity": 300,
+      "accessibility_info": "No wheelchair access. Steep stairs.",
+      "pricing_tier": "budget",
+      "level": 2,
+      "section_type": "balcony",
+      "view_quality": "good"
+    },
+    {
+      "id": "grand-tier-boxes",
+      "name": "Grand Tier Boxes",
+      "display_name": "Grand Tier Boxes",
+      "color_hex": "#F59E0B",
+      "capacity": 120,
+      "accessibility_info": "Limited access. Please contact box office.",
+      "pricing_tier": "vip",
+      "level": 1,
+      "section_type": "box",
+      "view_quality": "excellent"
+    },
+    {
+      "id": "upper-tier-boxes",
+      "name": "Upper Tier Boxes",
+      "display_name": "Upper Tier Boxes",
+      "color_hex": "#EF4444",
+      "capacity": 80,
+      "accessibility_info": "No wheelchair access.",
+      "pricing_tier": "standard",
+      "level": 2,
+      "section_type": "box",
+      "view_quality": "good"
+    },
+    {
+      "id": "royal-box",
+      "name": "Royal Box",
+      "display_name": "Royal Box",
+      "color_hex": "#DC2626",
+      "capacity": 12,
+      "accessibility_info": "Private entrance available.",
+      "pricing_tier": "vip",
+      "level": 1,
+      "section_type": "vip_lounge",
+      "view_quality": "excellent"
+    }
+  ],
+  "seats": [
+    {
+      "id": "stalls-a-1",
+      "section_id": "stalls",
+      "row": "A",
+      "number": 1,
+      "status": "available",
+      "position": { "x": 450, "y": 200 },
+      "accessibility": true,
+      "price_pence": 8500,
+      "seat_type": "wheelchair",
+      "view_description": "Front row center, excellent view"
+    },
+    {
+      "id": "stalls-a-2", 
+      "section_id": "stalls",
+      "row": "A",
+      "number": 2,
+      "status": "available",
+      "position": { "x": 480, "y": 200 },
+      "accessibility": true,
+      "price_pence": 8500,
+      "seat_type": "companion",
+      "view_description": "Front row center, excellent view"
+    },
+    {
+      "id": "stalls-a-3",
+      "section_id": "stalls",
+      "row": "A",
+      "number": 3,
+      "status": "available",
+      "position": { "x": 510, "y": 200 },
+      "accessibility": false,
+      "price_pence": 8500,
+      "seat_type": "premium",
+      "view_description": "Front row center, excellent view"
+    },
+    {
+      "id": "stalls-a-4",
+      "section_id": "stalls", 
+      "row": "A",
+      "number": 4,
+      "status": "available",
+      "position": { "x": 540, "y": 200 },
+      "accessibility": false,
+      "price_pence": 8500,
+      "seat_type": "premium",
+      "view_description": "Front row center, excellent view"
+    },
+    {
+      "id": "stalls-a-5",
+      "section_id": "stalls",
+      "row": "A", 
+      "number": 5,
+      "status": "available",
+      "position": { "x": 570, "y": 200 },
+      "accessibility": false,
+      "price_pence": 8500,
+      "seat_type": "premium",
+      "view_description": "Front row center, excellent view"
+    },
+    {
+      "id": "stalls-b-1",
+      "section_id": "stalls",
+      "row": "B",
+      "number": 1,
+      "status": "available", 
+      "position": { "x": 440, "y": 230 },
+      "accessibility": false,
+      "price_pence": 8000,
+      "seat_type": "aisle",
+      "view_description": "Second row, excellent view"
+    },
+    {
+      "id": "stalls-b-2",
+      "section_id": "stalls",
+      "row": "B",
+      "number": 2,
+      "status": "sold",
+      "position": { "x": 470, "y": 230 },
+      "accessibility": false,
+      "price_pence": 8000,
+      "seat_type": "standard",
+      "view_description": "Second row, excellent view"
+    },
+    {
+      "id": "dress-circle-a-1",
+      "section_id": "dress-circle",
+      "row": "A",
+      "number": 1,
+      "status": "available",
+      "position": { "x": 400, "y": 350 },
+      "accessibility": false,
+      "price_pence": 6500,
+      "seat_type": "aisle",
+      "view_description": "First balcony row, elevated view"
+    },
+    {
+      "id": "dress-circle-a-2",
+      "section_id": "dress-circle",
+      "row": "A",
+      "number": 2,
+      "status": "reserved",
+      "position": { "x": 430, "y": 350 },
+      "accessibility": false,
+      "price_pence": 6500,
+      "seat_type": "standard",
+      "view_description": "First balcony row, elevated view",
+      "hold_expires_at": "2024-12-20T20:00:00Z"
+    },
+    {
+      "id": "upper-circle-a-1",
+      "section_id": "upper-circle",
+      "row": "A", 
+      "number": 1,
+      "status": "available",
+      "position": { "x": 350, "y": 480 },
+      "accessibility": false,
+      "price_pence": 4500,
+      "seat_type": "aisle",
+      "view_description": "Upper balcony, good overall view"
+    },
+    {
+      "id": "royal-box-1",
+      "section_id": "royal-box",
+      "row": "BOX",
+      "number": 1,
+      "status": "available",
+      "position": { "x": 150, "y": 300 },
+      "accessibility": false,
+      "price_pence": 15000,
+      "seat_type": "premium",
+      "view_description": "Private box with exclusive service",
+      "notes": "Includes complimentary drinks and interval service"
+    }
+  ],
+  "pricing": [
+    {
+      "section_id": "stalls",
+      "base_price_pence": 8500,
+      "fees": {
+        "booking_fee_pence": 350,
+        "service_charge_pence": 250,
+        "percentage_fee": 2.5
+      },
+      "availability_pricing": {
+        "high_demand_multiplier": 1.2,
+        "last_minute_discount": 0.85,
+        "early_bird_discount": 0.9
+      },
+      "restrictions": {
+        "min_age": 5,
+        "max_quantity": 8
+      }
+    },
+    {
+      "section_id": "dress-circle",
+      "base_price_pence": 6500,
+      "fees": {
+        "booking_fee_pence": 300,
+        "service_charge_pence": 200,
+        "percentage_fee": 2.5
+      },
+      "availability_pricing": {
+        "high_demand_multiplier": 1.15,
+        "last_minute_discount": 0.9
+      }
+    },
+    {
+      "section_id": "upper-circle",
+      "base_price_pence": 4500,
+      "fees": {
+        "booking_fee_pence": 250,
+        "service_charge_pence": 150,
+        "percentage_fee": 2.5
+      },
+      "availability_pricing": {
+        "last_minute_discount": 0.8
+      }
+    },
+    {
+      "section_id": "grand-tier-boxes",
+      "base_price_pence": 12000,
+      "fees": {
+        "booking_fee_pence": 500,
+        "service_charge_pence": 400,
+        "percentage_fee": 3.0
+      },
+      "restrictions": {
+        "min_age": 8
+      }
+    },
+    {
+      "section_id": "upper-tier-boxes", 
+      "base_price_pence": 7500,
+      "fees": {
+        "booking_fee_pence": 350,
+        "service_charge_pence": 250,
+        "percentage_fee": 2.5
+      }
+    },
+    {
+      "section_id": "royal-box",
+      "base_price_pence": 15000,
+      "fees": {
+        "booking_fee_pence": 0,
+        "service_charge_pence": 0,
+        "percentage_fee": 0
+      },
+      "restrictions": {
+        "max_quantity": 4,
+        "requires_adult_supervision": false
+      }
+    }
+  ],
+  "accessibility_features": [
+    {
+      "type": "wheelchair",
+      "description": "Wheelchair accessible seating in Stalls section",
+      "sections_available": ["stalls"],
+      "booking_notes": "Please contact box office 48 hours in advance",
+      "contact_required": true
+    },
+    {
+      "type": "audio_description",
+      "description": "Audio description headsets available for visually impaired patrons",
+      "sections_available": ["stalls", "dress-circle"],
+      "booking_notes": "Available for all performances, book in advance"
+    },
+    {
+      "type": "large_print",
+      "description": "Large print programs available",
+      "sections_available": ["stalls", "dress-circle", "upper-circle"],
+      "booking_notes": "Available at box office on performance day"
+    }
+  ]
+} 

@@ -10,13 +10,13 @@
 		D046892E2E2A8AF10033553E /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D046892D2E2A8AF10033553E /* GoogleSignIn */; };
 		D04689302E2A8AF10033553E /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D046892F2E2A8AF10033553E /* GoogleSignInSwift */; };
 		D04689332E2A8AFF0033553E /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = D04689322E2A8AFF0033553E /* Alamofire */; };
-		D04689352E2A8AFF0033553E /* AlamofireDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = D04689342E2A8AFF0033553E /* AlamofireDynamic */; };
 		D04689382E2A8B1B0033553E /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = D04689372E2A8B1B0033553E /* KeychainAccess */; };
 		D046893B2E2A8C700033553E /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = D046893A2E2A8C700033553E /* Stripe */; };
 		D046893D2E2A8C700033553E /* StripeApplePay in Frameworks */ = {isa = PBXBuildFile; productRef = D046893C2E2A8C700033553E /* StripeApplePay */; };
 		D046893F2E2A8C700033553E /* StripeCardScan in Frameworks */ = {isa = PBXBuildFile; productRef = D046893E2E2A8C700033553E /* StripeCardScan */; };
 		D04689412E2A8C700033553E /* StripeConnect in Frameworks */ = {isa = PBXBuildFile; productRef = D04689402E2A8C700033553E /* StripeConnect */; };
 		D04689432E2A8C700033553E /* StripeFinancialConnections in Frameworks */ = {isa = PBXBuildFile; productRef = D04689422E2A8C700033553E /* StripeFinancialConnections */; };
+		D04689452E2A8C700033553E /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = D04689442E2A8C700033553E /* StripePaymentSheet */; };
 		D0770CDC2E2A9779009BB420 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D0770CDB2E2A9779009BB420 /* FirebaseAnalytics */; };
 		D0770CDE2E2A9779009BB420 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = D0770CDD2E2A9779009BB420 /* FirebaseAnalyticsCore */; };
 		D0770D4C2E2A9B6E009BB420 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0770D4B2E2A9B6E009BB420 /* GoogleService-Info.plist */; };
@@ -44,6 +44,7 @@
 		D04688F72E2A44A80033553E /* LMLTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LMLTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D04689012E2A44A90033553E /* LMLUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LMLUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0770D4B2E2A9B6E009BB420 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		D0770D4D2E2A9B6F009BB420 /* LML.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LML.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -71,10 +72,10 @@
 			files = (
 				D04689332E2A8AFF0033553E /* Alamofire in Frameworks */,
 				D04689412E2A8C700033553E /* StripeConnect in Frameworks */,
-				D04689352E2A8AFF0033553E /* AlamofireDynamic in Frameworks */,
 				D046892E2E2A8AF10033553E /* GoogleSignIn in Frameworks */,
 				D04689302E2A8AF10033553E /* GoogleSignInSwift in Frameworks */,
 				D04689432E2A8C700033553E /* StripeFinancialConnections in Frameworks */,
+				D04689452E2A8C700033553E /* StripePaymentSheet in Frameworks */,
 				D0770CDC2E2A9779009BB420 /* FirebaseAnalytics in Frameworks */,
 				D0770CDE2E2A9779009BB420 /* FirebaseAnalyticsCore in Frameworks */,
 				D046893F2E2A8C700033553E /* StripeCardScan in Frameworks */,
@@ -105,6 +106,7 @@
 			isa = PBXGroup;
 			children = (
 				D0770D4B2E2A9B6E009BB420 /* GoogleService-Info.plist */,
+				D0770D4D2E2A9B6F009BB420 /* LML.entitlements */,
 				D04688EC2E2A44A70033553E /* LML */,
 				D04688FA2E2A44A90033553E /* LMLTests */,
 				D04689042E2A44A90033553E /* LMLUITests */,
@@ -145,13 +147,13 @@
 				D046892D2E2A8AF10033553E /* GoogleSignIn */,
 				D046892F2E2A8AF10033553E /* GoogleSignInSwift */,
 				D04689322E2A8AFF0033553E /* Alamofire */,
-				D04689342E2A8AFF0033553E /* AlamofireDynamic */,
 				D04689372E2A8B1B0033553E /* KeychainAccess */,
 				D046893A2E2A8C700033553E /* Stripe */,
 				D046893C2E2A8C700033553E /* StripeApplePay */,
 				D046893E2E2A8C700033553E /* StripeCardScan */,
 				D04689402E2A8C700033553E /* StripeConnect */,
 				D04689422E2A8C700033553E /* StripeFinancialConnections */,
+				D04689442E2A8C700033553E /* StripePaymentSheet */,
 				D0770CDB2E2A9779009BB420 /* FirebaseAnalytics */,
 				D0770CDD2E2A9779009BB420 /* FirebaseAnalyticsCore */,
 			);
@@ -445,6 +447,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LML.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 24F2S7J9BU;
@@ -473,6 +476,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LML.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 24F2S7J9BU;
@@ -668,11 +672,6 @@
 			package = D04689312E2A8AFF0033553E /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
 		};
-		D04689342E2A8AFF0033553E /* AlamofireDynamic */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D04689312E2A8AFF0033553E /* XCRemoteSwiftPackageReference "Alamofire" */;
-			productName = AlamofireDynamic;
-		};
 		D04689372E2A8B1B0033553E /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D04689362E2A8B1B0033553E /* XCRemoteSwiftPackageReference "KeychainAccess" */;
@@ -702,6 +701,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D04689392E2A8C700033553E /* XCRemoteSwiftPackageReference "stripe-ios" */;
 			productName = StripeFinancialConnections;
+		};
+		D04689442E2A8C700033553E /* StripePaymentSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D04689392E2A8C700033553E /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePaymentSheet;
 		};
 		D0770CDB2E2A9779009BB420 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;

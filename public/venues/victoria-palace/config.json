@@ -1,0 +1,95 @@
+{
+  "venue": {
+    "id": "victoria-palace-theater",
+    "name": "Victoria Palace Theatre",
+    "slug": "victoria-palace",
+    "address": "Victoria Street, London SW1E 5EA, UK",
+    "coordinates": {
+      "lat": 51.4975,
+      "lng": -0.1357
+    },
+    "capacity": 1550,
+    "contact": {
+      "email": "bookings@victoriapalacetheatre.co.uk",
+      "phone": "+44 20 7834 1317",
+      "website": "https://victoriapalacetheatre.co.uk"
+    },
+    "timezone": "Europe/London",
+    "venue_type": "theater"
+  },
+  "shows": [
+    {
+      "id": "hamilton-victoria-palace-2024-12-20",
+      "title": "Hamilton",
+      "date": "2024-12-20",
+      "time": "19:30",
+      "duration_minutes": 165,
+      "description": "The award-winning musical about the life and times of Alexander Hamilton, featuring the original London cast",
+      "image_url": "/hamilton-poster.jpg",
+      "genre": "Musical",
+      "age_restriction": "PG",
+      "language": "English"
+    },
+    {
+      "id": "hamilton-victoria-palace-2024-12-21",
+      "title": "Hamilton",
+      "date": "2024-12-21",
+      "time": "14:30",
+      "duration_minutes": 165,
+      "description": "The award-winning musical about the life and times of Alexander Hamilton - Matinee Performance",
+      "image_url": "/hamilton-poster.jpg",
+      "genre": "Musical",
+      "age_restriction": "PG",
+      "language": "English"
+    },
+    {
+      "id": "hamilton-victoria-palace-2024-12-21-evening",
+      "title": "Hamilton",
+      "date": "2024-12-21",
+      "time": "19:30",
+      "duration_minutes": 165,
+      "description": "The award-winning musical about the life and times of Alexander Hamilton - Evening Performance",
+      "image_url": "/hamilton-poster.jpg",
+      "genre": "Musical",
+      "age_restriction": "PG",
+      "language": "English"
+    }
+  ],
+  "booking_rules": {
+    "max_seats_per_booking": 8,
+    "reservation_timeout_minutes": 15,
+    "pricing_currency": "GBP",
+    "requires_phone": false,
+    "allows_guest_booking": true,
+    "minimum_age": 5,
+    "group_booking_threshold": 10,
+    "cancellation_policy": {
+      "allowed": true,
+      "deadline_hours": 24,
+      "fee_percentage": 10
+    },
+    "transfer_policy": {
+      "allowed": true,
+      "deadline_hours": 2,
+      "fee_pence": 500
+    }
+  },
+  "api_simulation": {
+    "network_delay_ms": [100, 300],
+    "error_rate": 0.02,
+    "availability_update_interval": 30000,
+    "realistic_booking_patterns": true,
+    "simulate_high_demand": true,
+    "custom_responses": {
+      "/health": {
+        "status": "operational",
+        "last_maintenance": "2024-12-15T02:00:00Z"
+      }
+    }
+  },
+  "data_sources": {
+    "seat_map_file": "seat-map.json",
+    "pricing_file": "pricing.json",
+    "availability_source": "dynamic"
+  }
+} 

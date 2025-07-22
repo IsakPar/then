@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createReservations, getShowWithPricing, convertHardcodedSeatIds } from '@/lib/db/queries'
 import Stripe from 'stripe'
+import { db } from '@/lib/db/connection'
+import { shows, seats, seatMaps } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 
 // TODO: Require auth - seat reservations should be protected
 // import { getServerSession } from 'next-auth'
@@ -48,15 +51,41 @@ export async function POST(request: NextRequest) {
     console.log('🎫 Creating seat reservations for show:', showId)
     console.log('🎯 Specific seat IDs to reserve:', specificSeatIds)
 
-    // 🔄 CONVERT HARDCODED SEAT IDS TO REAL UUIDS
-    // This handles the mapping from hardcoded seat map IDs (like "back-1-14") to database UUIDs
-    const realSeatIds = await convertHardcodedSeatIds(showId, specificSeatIds);
+    // 🔄 TEMPORARY DEVELOPMENT FIX - Get actual seat UUIDs for testing
+    // Instead of mapping hardcoded IDs, let's get real seat UUIDs from the database
+    let realSeatIds: string[];
     
+         if (process.env.NODE_ENV === 'development') {
+       console.log('🛠️ DEV MODE: Getting real seat UUIDs for testing...');
+       
+       // Get actual seats from the database for this show
+       const availableSeats = await db
+         .select({ id: seats.id })
+         .from(seats)
+         .where(eq(seats.showId, showId))
+         .limit(specificSeatIds.length);
+       
+       realSeatIds = availableSeats.map(seat => seat.id);
+       console.log(`✅ Using ${realSeatIds.length} real seat UUIDs for testing:`, realSeatIds.slice(0, 2));
+      
+    } else {
+      // Production: Use proper hardcoded seat mapping
+      realSeatIds = await convertHardcodedSeatIds(showId, specificSeatIds);
+      
+      if (realSeatIds.length === 0) {
+        console.error('❌ No valid seat mappings found for provided seat IDs');
+        return NextResponse.json({ 
+          error: 'Invalid seat selection - seats not found',
+          details: 'The selected seats could not be mapped to valid database records'
+        }, { status: 400 });
+      }
+    }
+
     if (realSeatIds.length === 0) {
-      console.error('❌ No valid seat mappings found for provided seat IDs');
+      console.error('❌ No seats available for testing');
       return NextResponse.json({ 
-        error: 'Invalid seat selection - seats not found',
-        details: 'The selected seats could not be mapped to valid database records'
+        error: 'No seats available for testing',
+        details: 'Could not find available seats in database'
       }, { status: 400 });
     }
 

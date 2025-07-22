@@ -7,12 +7,14 @@ export interface Seat {
   row_letter: string;
   seat_number: number;
   section_id: string;
+  section_name?: string;
   price_pence: number;
   status: 'available' | 'selected' | 'booked' | 'reserved';
   position: {
     x: number;
     y: number;
   };
+  color_hex?: string;
   is_accessible?: boolean;
   notes?: string;
 }
@@ -55,11 +57,17 @@ export interface SeatMapTheme {
 
 export interface SeatRenderProps {
   seat: Seat;
+  position?: { x: number; y: number };
+  radius?: number;
   isSelected: boolean;
   isHovered: boolean;
-  onClick: () => void;
-  onHover: () => void;
-  theme: SeatMapTheme;
+  showLabel?: boolean;
+  showDetails?: boolean;
+  onClick?: () => void;
+  onHover?: () => void;
+  onSeatClick?: (seat: Seat) => void;
+  onSeatHover?: (seat: Seat) => void;
+  theme?: SeatMapTheme;
 }
 
 export interface CoordinateTransform {
@@ -75,4 +83,17 @@ export interface ViewportBounds {
   maxY: number;
   width: number;
   height: number;
-} 
+}
+
+export const DEFAULT_THEME = {
+  fonts: {
+    seatNumber: {
+      family: 'Arial, sans-serif',
+      weight: 'normal'
+    }
+  },
+  colors: {
+    accessible: '#007bff',
+    selectedBorder: '#ffd700'
+  }
+}; 

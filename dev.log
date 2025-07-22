@@ -1,0 +1,12 @@
+
+> theone@0.1.0 dev /Users/isakparild/Desktop/theone
+> next dev -p 3001
+
+   ▲ Next.js 15.3.5
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.68.79:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1803ms
+   Reload env: .env

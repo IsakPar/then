@@ -357,7 +357,7 @@ export default function HomePage() {
           <div className="flex justify-center mb-1">
             <div className="relative">
               <img 
-                src="/lastminutelive-logo-transparent.png" 
+                src="/LML-logo-trans.png" 
                 alt="LastMinuteLive Logo"
                 className="w-96 h-96 lg:w-[576px] lg:h-[576px] object-contain drop-shadow-2xl"
               />

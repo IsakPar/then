@@ -1,0 +1,79 @@
+{
+  "venue": {
+    "id": "lyric-theater-london",
+    "name": "Lyric Theatre",
+    "slug": "lyric-theater",
+    "address": "29 Shaftesbury Avenue, London W1D 7ES, UK",
+    "coordinates": {
+      "lat": 51.5123,
+      "lng": -0.1320
+    },
+    "capacity": 915,
+    "contact": {
+      "email": "tickets@lyrictheatre.co.uk",
+      "phone": "+44 20 7494 5045",
+      "website": "https://lyrictheatre.co.uk"
+    },
+    "timezone": "Europe/London",
+    "venue_type": "theater"
+  },
+  "shows": [
+    {
+      "id": "chicago-lyric-2024-12-20",
+      "title": "Chicago",
+      "date": "2024-12-20",
+      "time": "19:30",
+      "duration_minutes": 150,
+      "description": "The sultry musical set in prohibition-era Chicago featuring jazz, murder, and corruption",
+      "image_url": "/chicago-poster.jpg",
+      "genre": "Musical",
+      "age_restriction": "12A",
+      "language": "English"
+    },
+    {
+      "id": "chicago-lyric-2024-12-21",
+      "title": "Chicago",
+      "date": "2024-12-21",
+      "time": "14:30",
+      "duration_minutes": 150,
+      "description": "The sultry musical set in prohibition-era Chicago - Matinee Performance",
+      "image_url": "/chicago-poster.jpg", 
+      "genre": "Musical",
+      "age_restriction": "12A",
+      "language": "English"
+    }
+  ],
+  "booking_rules": {
+    "max_seats_per_booking": 6,
+    "reservation_timeout_minutes": 12,
+    "pricing_currency": "GBP",
+    "requires_phone": true,
+    "allows_guest_booking": true,
+    "minimum_age": 12,
+    "group_booking_threshold": 8,
+    "cancellation_policy": {
+      "allowed": false
+    },
+    "transfer_policy": {
+      "allowed": false
+    }
+  },
+  "api_simulation": {
+    "network_delay_ms": [150, 500],
+    "error_rate": 0.035,
+    "availability_update_interval": 45000,
+    "realistic_booking_patterns": true,
+    "simulate_high_demand": false,
+    "custom_responses": {
+      "/health": {
+        "status": "operational",
+        "last_maintenance": "2024-12-10T01:30:00Z"
+      }
+    }
+  },
+  "data_sources": {
+    "seat_map_file": "seat-map.json",
+    "pricing_file": "pricing.json",
+    "availability_source": "static"
+  }
+} 

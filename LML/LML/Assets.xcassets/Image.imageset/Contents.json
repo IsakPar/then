@@ -1,0 +1,18 @@
+{
+  "images" : [
+    {
+      "filename" : "LML-logo-trans.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "filename" : "LML-logo.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+} 

@@ -1,0 +1,363 @@
+# 🎭 Last Minute Live iOS App - Cursor Rules
+
+## 📱 SwiftUI Project Standards & Architecture
+
+### 🏗️ **ARCHITECTURE PRINCIPLES**
+
+#### **Component Hierarchy (Atomic Design)**
+```
+Atoms/         # Basic UI elements (buttons, inputs, labels)
+├── Molecules/ # Simple combinations (form fields, cards)
+├── Organisms/ # Complex components (navigation, seat maps)
+└── Templates/ # Page layouts and structures
+```
+
+#### **Folder Structure Enforcement**
+```
+Views/
+├── Atoms/           # Single-purpose components (<50 lines)
+│   ├── Buttons/
+│   ├── Inputs/
+│   └── Text/
+├── Molecules/       # Composite components (<150 lines)
+│   ├── Cards/
+│   ├── Forms/
+│   └── Navigation/
+├── Organisms/       # Complex components (<300 lines)
+│   ├── SeatMaps/
+│   ├── Payment/
+│   └── Authentication/
+└── Templates/       # Full screens (<200 lines)
+    ├── Account/
+    ├── Tickets/
+    └── Shows/
+```
+
+---
+
+## 🚨 **STRICT LINE LIMITS**
+
+### **File Size Constraints**
+- **Atoms**: MAX 50 lines
+- **Molecules**: MAX 150 lines  
+- **Organisms**: MAX 300 lines
+- **Templates/Screens**: MAX 200 lines
+- **ViewModels**: MAX 250 lines
+- **Models**: MAX 100 lines
+- **Services**: MAX 300 lines
+
+### **Function/Method Limits**
+- **View body**: MAX 50 lines
+- **Functions**: MAX 30 lines
+- **Computed properties**: MAX 10 lines
+
+**❌ VIOLATION EXAMPLES:**
+```swift
+// BAD: 977-line HamiltonSeatMapView.swift
+// BAD: Massive view body with all logic inline
+// BAD: Mixed UI and business logic in same file
+```
+
+**✅ COMPLIANCE EXAMPLES:**
+```swift
+// GOOD: SeatButton.swift (Atom - 25 lines)
+// GOOD: SeatSection.swift (Molecule - 80 lines)  
+// GOOD: SeatMapCanvas.swift (Organism - 250 lines)
+```
+
+---
+
+## 🎯 **SINGLE RESPONSIBILITY ENFORCEMENT**
+
+### **View Responsibility Rules**
+1. **Views**: ONLY UI declaration and layout
+2. **ViewModels**: ONLY state management and business logic  
+3. **Services**: ONLY data operations and API calls
+4. **Models**: ONLY data structures and computed properties
+
+### **SwiftUI View Guidelines**
+```swift
+// ✅ GOOD: Clean separation
+struct SeatButton: View {
+    let seat: TheaterSeat
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            seatAppearance
+        }
+    }
+    
+    private var seatAppearance: some View {
+        // UI only - no business logic
+    }
+}
+
+// ❌ BAD: Mixed concerns
+struct SeatButton: View {
+    var body: some View {
+        Button {
+            // ❌ Business logic in view
+            calculatePrice()
+            updateDatabase()
+            processPayment()
+        } label: {
+            // UI code
+        }
+    }
+}
+```
+
+---
+
+## 🔄 **BUSINESS LOGIC SEPARATION**
+
+### **ViewModel Pattern (Required)**
+```swift
+// ✅ REQUIRED: Every complex view needs a ViewModel
+class SeatMapViewModel: ObservableObject {
+    @Published var seats: [TheaterSeat] = []
+    @Published var selectedSeats: [TheaterSeat] = []
+    @Published var totalPrice: Int = 0
+    
+    // Business logic here, NOT in views
+    func selectSeat(_ seat: TheaterSeat) { }
+    func calculateTotal() { }
+    func processPayment() { }
+}
+
+struct SeatMapView: View {
+    @StateObject private var viewModel = SeatMapViewModel()
+    
+    var body: some View {
+        // UI only - delegate actions to viewModel
+    }
+}
+```
+
+### **Prohibited in Views**
+- ❌ API calls
+- ❌ Database operations  
+- ❌ Complex calculations
+- ❌ Business rules
+- ❌ Payment processing
+- ❌ Authentication logic
+
+---
+
+## 🧩 **COMPONENT REUSABILITY**
+
+### **Reusable Component Requirements**
+1. **Configurable**: Accept parameters for customization
+2. **Standalone**: No external dependencies except data
+3. **Testable**: Clear inputs and outputs
+4. **Documented**: Clear purpose and usage examples
+
+### **Component Creation Rules**
+```swift
+// ✅ GOOD: Reusable component
+struct PriceTag: View {
+    let amount: Int
+    let style: PriceStyle = .standard
+    
+    var body: some View {
+        Text(formatPrice(amount))
+            .foregroundColor(style.color)
+    }
+}
+
+// ❌ BAD: Hardcoded, non-reusable
+struct HamiltonPrice: View {
+    var body: some View {
+        Text("£85") // Hardcoded
+            .foregroundColor(.yellow) // Non-configurable
+    }
+}
+```
+
+---
+
+## 🚫 **MOCK DATA PREVENTION**
+
+### **Production Code Rules**
+- ❌ NO hardcoded show data in production builds
+- ❌ NO fake user information
+- ❌ NO mock API responses
+- ✅ USE proper data services with fallbacks
+- ✅ USE environment-based configuration
+
+### **Development vs Production**
+```swift
+// ✅ CORRECT: Environment-based data
+struct ShowService {
+    func getShows() async -> [Show] {
+        #if DEBUG
+        return mockShows // Only in debug builds
+        #else
+        return await apiClient.fetchShows() // Production API
+        #endif
+    }
+}
+
+// ❌ WRONG: Always mock data
+let shows = [
+    Show(name: "Hamilton", venue: "Victoria Palace")
+] // This will be in production!
+```
+
+---
+
+## 📝 **SWIFTLINT COMPLIANCE**
+
+### **Required Rules**
+- `line_length: 120`
+- `file_length: warning: 300, error: 400`
+- `function_body_length: warning: 30, error: 50`
+- `type_body_length: warning: 200, error: 300`
+- `cyclomatic_complexity: warning: 10, error: 20`
+- `force_cast: error`
+- `force_try: error`
+- `force_unwrapping: warning`
+
+### **Naming Conventions**
+- **Classes**: PascalCase (`AuthManager`, `SeatMapViewModel`)
+- **Functions**: camelCase (`selectSeat`, `calculateTotal`)
+- **Variables**: camelCase (`selectedSeats`, `totalPrice`)
+- **Constants**: camelCase (`maxSeatCount`, `defaultTimeout`)
+- **Files**: PascalCase matching main type (`SeatButton.swift`)
+
+---
+
+## 🔧 **CODE QUALITY ENFORCEMENT**
+
+### **Required Before Commit**
+1. **SwiftLint**: No errors, minimal warnings
+2. **Line limits**: All files within prescribed limits
+3. **Single responsibility**: Each file has one clear purpose
+4. **No mixed concerns**: UI and business logic separated
+5. **Reusable components**: No duplicate UI code
+
+### **Refactoring Triggers**
+- File exceeds line limits → Split into smaller components
+- Mixed UI/business logic → Create ViewModel
+- Duplicate code → Extract reusable component
+- Hardcoded values → Move to configuration/service
+- Complex view hierarchy → Break into Atoms/Molecules
+
+### **Component Extraction Examples**
+```swift
+// BEFORE: 977-line HamiltonSeatMapView.swift
+// AFTER: Extract into:
+// - SeatButton.swift (Atom)
+// - SeatSection.swift (Molecule)  
+// - TheaterStage.swift (Molecule)
+// - SeatSelectionPanel.swift (Molecule)
+// - PaymentSheet.swift (Organism)
+// - SeatMapCanvas.swift (Organism)
+// - HamiltonSeatMapView.swift (Template)
+```
+
+---
+
+## 🎨 **UI/UX STANDARDS**
+
+### **Design System**
+- **Colors**: Use theme-based color system (no hardcoded hex)
+- **Typography**: Predefined text styles
+- **Spacing**: Consistent spacing units (8, 16, 24, 32)
+- **Animations**: Subtle, purposeful, <300ms duration
+
+### **Accessibility Requirements**
+- All interactive elements have accessibility labels
+- Support Dynamic Type
+- High contrast mode compatibility
+- VoiceOver navigation support
+
+---
+
+## 🧪 **TESTING REQUIREMENTS**
+
+### **Unit Test Coverage**
+- **ViewModels**: 90%+ coverage
+- **Services**: 95%+ coverage  
+- **Models**: 80%+ coverage
+- **Business logic**: 100% coverage
+
+### **UI Testing**
+- Critical user flows (seat selection, payment)
+- Navigation between screens
+- Error states and edge cases
+
+---
+
+## 🚀 **PERFORMANCE STANDARDS**
+
+### **SwiftUI Optimization**
+- Use `@StateObject` vs `@ObservedObject` correctly
+- Minimize view re-renders with proper data flow
+- Lazy loading for large lists
+- Image optimization and caching
+
+### **Memory Management**
+- No retain cycles in ViewModels
+- Proper cleanup of observers and timers
+- Efficient seat map rendering (avoid creating 500+ views)
+
+---
+
+## 📋 **CODE REVIEW CHECKLIST**
+
+### **Before Merging**
+- [ ] All files under line limits
+- [ ] Single responsibility maintained
+- [ ] Business logic in ViewModels, not Views
+- [ ] Reusable components used where possible
+- [ ] No mock data in production code
+- [ ] SwiftLint passes
+- [ ] Unit tests written and passing
+- [ ] UI tests for new features
+- [ ] Accessibility labels added
+- [ ] Performance impact assessed
+
+### **Architecture Review**
+- [ ] Follows Atomic Design principles
+- [ ] Proper folder structure
+- [ ] No circular dependencies
+- [ ] Clear data flow
+- [ ] Testable components
+
+---
+
+## 🎯 **PHASE IMPLEMENTATION ORDER**
+
+### **Phase 1: Component Extraction (Current)**
+1. Break down HamiltonSeatMapView.swift
+2. Refactor AccountView.swift
+3. Optimize TicketsView.swift
+4. Review AuthManager.swift
+
+### **Phase 2: Data Integration**
+- Replace mock data with API services
+- Implement proper error handling
+- Add offline capability
+
+### **Phase 3: Polish & Optimization**
+- Performance optimization
+- Accessibility improvements
+- Animation polish
+- Testing coverage
+
+---
+
+## ❌ **COMMON VIOLATIONS TO AVOID**
+
+1. **Giant files** (>300 lines)
+2. **Mixed concerns** (UI + business logic)
+3. **Hardcoded values** in production
+4. **Duplicate components** instead of reusing
+5. **Poor naming** (unclear purpose)
+6. **No error handling**
+7. **Force unwrapping** without good reason
+8. **Complex view hierarchies** (>5 levels deep)
+
+**Remember: If a file is getting large or complex, it's time to break it down into smaller, focused components!** 

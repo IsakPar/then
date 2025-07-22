@@ -47,22 +47,93 @@ export default function SeatMap({ showId, onSeatSelect, onSeatDeselect, selected
       setSeatMapData(seatMapData);
       setSeats(seatsResponse);
       
-      // Debug seat position data
+      // Enhanced debugging for coordinate data flow
+      console.log('🎫 === SEAT MAP DATA DEBUGGING ===');
       console.log('🎫 Total seats loaded:', seatsResponse.length);
+      console.log('🎫 Seat map data structure:', seatMapData);
+      
       if (seatsResponse.length > 0) {
         const sampleSeat = seatsResponse[0];
+        console.log('🎫 Sample seat full object:', sampleSeat);
         console.log('🎫 Sample seat position data:', sampleSeat.position);
+        console.log('🎫 Position type check:', typeof sampleSeat.position);
+        console.log('🎫 Position x/y check:', sampleSeat.position?.x, sampleSeat.position?.y);
         console.log('🎫 Sample seat section:', sampleSeat.section_name);
         console.log('🎫 Sample seat row/number:', sampleSeat.row_letter, sampleSeat.seat_number);
         
-        // Show sections breakdown
+        // Show sections breakdown with coordinate info
         const sectionCounts = seatsResponse.reduce((acc, seat) => {
           const sectionName = seat.section_name || 'Unknown';
-          acc[sectionName] = (acc[sectionName] || 0) + 1;
+          if (!acc[sectionName]) {
+            acc[sectionName] = { count: 0, hasCoordinates: 0 };
+          }
+          acc[sectionName].count++;
+          
+          // Check if this seat has valid coordinates
+          if (seat.position && 
+              typeof seat.position.x === 'number' && 
+              typeof seat.position.y === 'number' &&
+              !isNaN(seat.position.x) && 
+              !isNaN(seat.position.y)) {
+            acc[sectionName].hasCoordinates++;
+          }
+          
           return acc;
-        }, {} as Record<string, number>);
-        console.log('🎫 Seats by section:', sectionCounts);
+        }, {} as Record<string, { count: number; hasCoordinates: number }>);
+        
+        console.log('🎫 Sections with coordinate info:', sectionCounts);
+        
+        // Log coordinate ranges for each section
+        Object.keys(sectionCounts).forEach(sectionName => {
+          const sectionSeats = seatsResponse.filter(seat => seat.section_name === sectionName);
+          const validCoordinates = sectionSeats
+            .filter(seat => seat.position && 
+                          typeof seat.position.x === 'number' && 
+                          typeof seat.position.y === 'number')
+            .map(seat => seat.position);
+            
+          if (validCoordinates.length > 0) {
+            const xCoords = validCoordinates.map(pos => pos.x);
+            const yCoords = validCoordinates.map(pos => pos.y);
+            const minX = Math.min(...xCoords);
+            const maxX = Math.max(...xCoords);
+            const minY = Math.min(...yCoords);
+            const maxY = Math.max(...yCoords);
+            
+            console.log(`🎫 ${sectionName} coordinates:`, {
+              seats: validCoordinates.length,
+              xRange: `${minX} - ${maxX}`,
+              yRange: `${minY} - ${maxY}`,
+              samplePositions: validCoordinates.slice(0, 3)
+            });
+          }
+        });
       }
+      
+      console.log('🎫 === END DEBUGGING ===');
+      
+      // ✅ COORDINATE SYSTEM SUMMARY
+      const seatsWithValidCoords = seatsResponse.filter(seat => 
+        seat.position && 
+        typeof seat.position.x === 'number' && 
+        typeof seat.position.y === 'number' &&
+        !isNaN(seat.position.x) && 
+        !isNaN(seat.position.y)
+      );
+      
+      const coordinateSystemUsed = seatsWithValidCoords.length > 0 ? 'JSON Database Coordinates' : 'Hardcoded Fallback Layout';
+      const percentageWithCoords = seatsResponse.length > 0 ? 
+        Math.round((seatsWithValidCoords.length / seatsResponse.length) * 100) : 0;
+      
+      console.log(`🎯 COORDINATE SYSTEM: ${coordinateSystemUsed}`);
+      console.log(`📊 COVERAGE: ${seatsWithValidCoords.length}/${seatsResponse.length} seats (${percentageWithCoords}%) have JSON coordinates`);
+      
+      if (seatsWithValidCoords.length > 0) {
+        console.log('✅ SUCCESS: Using perfect JSON coordinates - seats should render properly without overlap!');
+      } else {
+        console.log('⚠️ WARNING: No JSON coordinates found - falling back to hardcoded layout (may have overlaps)');
+      }
+      
     } catch (err) {
       console.error('Error fetching seat map data:', err);
       setError('Failed to load seat map');
@@ -99,6 +170,22 @@ export default function SeatMap({ showId, onSeatSelect, onSeatDeselect, selected
   };
 
   const getTheaterLayout = (sectionName: string, seatIndex: number, totalSeatsInSection: number) => {
+    // ⚠️ SAFETY CHECK: Do not use hardcoded layout if ANY seats have JSON coordinates
+    const hasJsonCoordinates = seats.some(seat => 
+      seat.position && 
+      typeof seat.position === 'object' && 
+      typeof seat.position.x === 'number' && 
+      typeof seat.position.y === 'number' &&
+      !isNaN(seat.position.x) && 
+      !isNaN(seat.position.y)
+    );
+    
+    if (hasJsonCoordinates) {
+      console.warn('🚫 Blocking hardcoded layout - JSON coordinates detected!');
+      // Return a fallback position to prevent crashes
+      return { x: 50, y: 50 };
+    }
+    
     // Theater layout configuration
     const stageY = 100; // Just below stage
     const centerX = 700; // Center of theater
@@ -176,12 +263,23 @@ export default function SeatMap({ showId, onSeatSelect, onSeatDeselect, selected
   const renderSeat = (seat: Seat, sectionName: string, seatIndex: number, totalSeatsInSection: number) => {
     // Use the actual position data from the database if available
     let seatX, seatY;
+    let usingJsonCoordinates = false;
     
-    if (seat.position && typeof seat.position === 'object' && seat.position.x && seat.position.y) {
+    // ✅ FIXED: Properly check for valid JSON coordinates (including 0 values)
+    if (seat.position && 
+        typeof seat.position === 'object' && 
+        typeof seat.position.x === 'number' && 
+        typeof seat.position.y === 'number' &&
+        !isNaN(seat.position.x) && 
+        !isNaN(seat.position.y)) {
+      
       seatX = seat.position.x;
       seatY = seat.position.y;
+      usingJsonCoordinates = true;
+      
     } else {
-      // Calculate position based on realistic theater layout
+      // ❌ FALLBACK: Calculate position based on hardcoded theater layout
+      console.warn(`⚠️ No valid JSON coordinates for seat ${seat.id}, using fallback layout`);
       const layout = getTheaterLayout(sectionName, seatIndex, totalSeatsInSection);
       seatX = layout.x;
       seatY = layout.y;
@@ -190,16 +288,20 @@ export default function SeatMap({ showId, onSeatSelect, onSeatDeselect, selected
     const seatColor = getSeatColor(seat);
     const isSelected = selectedSeats.some(s => s.id === seat.id);
     
-    // Debug first few seats
-    if (seatIndex < 3) {
+    // Enhanced debugging for first few seats
+    if (seatIndex < 5) {
       console.log(`🎫 Rendering seat ${seatIndex} in ${sectionName}:`, {
         id: seat.id,
         section: seat.section_name,
         row: seat.row_letter,
         number: seat.seat_number,
         position: seat.position,
+        positionType: typeof seat.position,
+        positionX: seat.position?.x,
+        positionY: seat.position?.y,
         calculatedX: seatX,
         calculatedY: seatY,
+        usingJsonCoordinates,
         color: seatColor
       });
     }

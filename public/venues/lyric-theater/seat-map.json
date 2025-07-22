@@ -1,0 +1,226 @@
+{
+  "layout": {
+    "type": "grid",
+    "viewport": {
+      "width": 1000,
+      "height": 700,
+      "scale": 1.0
+    },
+    "stage": {
+      "x": 400,
+      "y": 40,
+      "width": 200,
+      "height": 30,
+      "label": "STAGE"
+    },
+    "coordinate_system": "svg",
+    "background_image": null
+  },
+  "sections": [
+    {
+      "id": "stalls",
+      "name": "Stalls",
+      "display_name": "Stalls",
+      "color_hex": "#8B5CF6",
+      "capacity": 450,
+      "accessibility_info": "Wheelchair accessible with advance notice.",
+      "pricing_tier": "premium", 
+      "level": 0,
+      "section_type": "orchestra",
+      "view_quality": "excellent"
+    },
+    {
+      "id": "circle",
+      "name": "Circle",
+      "display_name": "Circle",
+      "color_hex": "#3B82F6",
+      "capacity": 350,
+      "accessibility_info": "Steps required. No wheelchair access.",
+      "pricing_tier": "standard",
+      "level": 1,
+      "section_type": "balcony",
+      "view_quality": "good"
+    },
+    {
+      "id": "upper-circle",
+      "name": "Upper Circle",
+      "display_name": "Upper Circle",
+      "color_hex": "#10B981",
+      "capacity": 115,
+      "accessibility_info": "Multiple flights of stairs. No wheelchair access.",
+      "pricing_tier": "budget",
+      "level": 2,
+      "section_type": "balcony",
+      "view_quality": "restricted"
+    }
+  ],
+  "seats": [
+    {
+      "id": "stalls-a-1",
+      "section_id": "stalls",
+      "row": "A",
+      "number": 1,
+      "status": "available",
+      "position": { "x": 350, "y": 150 },
+      "accessibility": true,
+      "price_pence": 7500,
+      "seat_type": "wheelchair",
+      "view_description": "Front row with excellent stage view"
+    },
+    {
+      "id": "stalls-a-2",
+      "section_id": "stalls",
+      "row": "A",
+      "number": 2,
+      "status": "available",
+      "position": { "x": 380, "y": 150 },
+      "accessibility": true,
+      "price_pence": 7500,
+      "seat_type": "companion",
+      "view_description": "Front row with excellent stage view"
+    },
+    {
+      "id": "stalls-a-3",
+      "section_id": "stalls",
+      "row": "A",
+      "number": 3,
+      "status": "sold",
+      "position": { "x": 410, "y": 150 },
+      "accessibility": false,
+      "price_pence": 7500,
+      "seat_type": "premium",
+      "view_description": "Front row center"
+    },
+    {
+      "id": "stalls-b-1",
+      "section_id": "stalls",
+      "row": "B",
+      "number": 1,
+      "status": "available",
+      "position": { "x": 340, "y": 180 },
+      "accessibility": false,
+      "price_pence": 7000,
+      "seat_type": "aisle",
+      "view_description": "Second row with clear view"
+    },
+    {
+      "id": "stalls-b-2",
+      "section_id": "stalls",
+      "row": "B",
+      "number": 2,
+      "status": "reserved",
+      "position": { "x": 370, "y": 180 },
+      "accessibility": false,
+      "price_pence": 7000,
+      "seat_type": "standard",
+      "view_description": "Second row",
+      "hold_expires_at": "2024-12-20T19:45:00Z"
+    },
+    {
+      "id": "circle-a-1",
+      "section_id": "circle",
+      "row": "A",
+      "number": 1,
+      "status": "available",
+      "position": { "x": 300, "y": 350 },
+      "accessibility": false,
+      "price_pence": 5500,
+      "seat_type": "aisle",
+      "view_description": "Front balcony row with elevated view"
+    },
+    {
+      "id": "circle-a-2",
+      "section_id": "circle",
+      "row": "A",
+      "number": 2,
+      "status": "available",
+      "position": { "x": 330, "y": 350 },
+      "accessibility": false,
+      "price_pence": 5500,
+      "seat_type": "standard",
+      "view_description": "Front balcony row"
+    },
+    {
+      "id": "upper-circle-a-1",
+      "section_id": "upper-circle",
+      "row": "A",
+      "number": 1,
+      "status": "available",
+      "position": { "x": 280, "y": 480 },
+      "accessibility": false,
+      "price_pence": 3500,
+      "seat_type": "aisle",
+      "view_description": "Upper level with partial view restrictions"
+    },
+    {
+      "id": "upper-circle-a-2",
+      "section_id": "upper-circle",
+      "row": "A",
+      "number": 2,
+      "status": "available",
+      "position": { "x": 310, "y": 480 },
+      "accessibility": false,
+      "price_pence": 3500,
+      "seat_type": "standard",
+      "view_description": "Upper level budget seating"
+    }
+  ],
+  "pricing": [
+    {
+      "section_id": "stalls",
+      "base_price_pence": 7500,
+      "fees": {
+        "booking_fee_pence": 350,
+        "service_charge_pence": 200,
+        "percentage_fee": 3.0
+      },
+      "availability_pricing": {
+        "high_demand_multiplier": 1.15,
+        "last_minute_discount": 0.9
+      },
+      "restrictions": {
+        "min_age": 12,
+        "max_quantity": 6
+      }
+    },
+    {
+      "section_id": "circle",
+      "base_price_pence": 5500,
+      "fees": {
+        "booking_fee_pence": 300,
+        "service_charge_pence": 150,
+        "percentage_fee": 3.0
+      },
+      "availability_pricing": {
+        "last_minute_discount": 0.85
+      }
+    },
+    {
+      "section_id": "upper-circle",
+      "base_price_pence": 3500,
+      "fees": {
+        "booking_fee_pence": 250,
+        "service_charge_pence": 100,
+        "percentage_fee": 3.0
+      },
+      "availability_pricing": {
+        "last_minute_discount": 0.75
+      }
+    }
+  ],
+  "accessibility_features": [
+    {
+      "type": "wheelchair",
+      "description": "Limited wheelchair accessible seating in Stalls section",
+      "sections_available": ["stalls"],
+      "booking_notes": "Must book 72 hours in advance. Limited spaces available.",
+      "contact_required": true
+    },
+    {
+      "type": "large_print",
+      "description": "Large print programs available on request",
+      "sections_available": ["stalls", "circle"],
+      "booking_notes": "Request at box office on arrival"
+    }
+  ]
+} 

@@ -36,7 +36,4 @@ export default function TheaterSeatmapTest() {
   );
 }
 
-export const metadata = {
-  title: 'Theater-Grade Seat Map Renderer | Performance Test',
-  description: 'WebGL-powered seat selection system with PixiJS and Hamilton theater data',
-}; 
+// Metadata moved to layout.tsx since this is a client component 
