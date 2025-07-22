@@ -1,12 +1,15 @@
 # 🐳 LastMinuteLive Development Dockerfile
 FROM node:18-alpine AS base
 
+# Install pnpm globally
+RUN npm install -g pnpm
+
 # Set working directory
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package*.json ./
-RUN npm install --legacy-peer-deps && npm cache clean --force
+COPY package*.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -28,4 +31,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Start the application in development mode
-CMD ["npm", "run", "dev"] 
+CMD ["pnpm", "dev"] 
