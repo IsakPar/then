@@ -32,7 +32,7 @@ class APIClient: APIClientProtocol {
     private let environment: APIEnvironment
     private let jsonDecoder: JSONDecoder
     
-    private init(environment: APIEnvironment = .development) {
+    private init(environment: APIEnvironment = .production) {
         self.environment = environment
         self.baseURL = environment.baseURL
         
@@ -372,11 +372,11 @@ enum APIEnvironment {
     var baseURL: URL {
         switch self {
         case .development:
-            return URL(string: "http://localhost:3001")!  // Local Next.js development server (fixed!)
+            return URL(string: "http://localhost:3001")!  // Local Next.js development server
         case .staging:
             return URL(string: "https://staging-api.lastminutelive.com")!
         case .production:
-            return URL(string: "https://api.lastminutelive.com")!
+            return URL(string: "https://then-production.up.railway.app")!  // Railway production backend
         }
     }
 }
