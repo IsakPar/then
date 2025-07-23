@@ -349,10 +349,12 @@ const SeatMapContainer: React.FC<SeatMapContainerProps> = ({
           sectionsMap.set(seat.section_id, {
             id: seat.section_id,
             name: seat.section_name || seat.section_id,
-            displayName: seat.display_name || seat.section_name || seat.section_id,
-            color: seat.color_hex || '#3b82f6',
-            seats: [],
-            bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0, centerX: 0, centerY: 0 }
+            display_name: seat.display_name || seat.section_name || seat.section_id,
+            color_hex: seat.color_hex || '#3b82f6',
+            base_price_pence: 0,
+            seat_map_id: '',
+            sort_order: 0,
+            seats: []
           });
         }
         const section = sectionsMap.get(seat.section_id)!;

@@ -39,6 +39,9 @@
     "node_modules",
     "lastminutelive",
     "mobile-app",
+    "tests.disabled",
+    "src/components/seatmap",
+    "src/lib/themes/venue-themes.ts",
     "**/* 2.*"
   ]
 }

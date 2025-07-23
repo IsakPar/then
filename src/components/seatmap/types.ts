@@ -8,6 +8,7 @@ export interface Seat {
   seat_number: number;
   section_id: string;
   section_name?: string;
+  display_name?: string;
   price_pence: number;
   status: 'available' | 'selected' | 'booked' | 'reserved';
   position: {
@@ -27,6 +28,7 @@ export interface SectionInfo {
   base_price_pence: number;
   seat_map_id: string;
   sort_order: number;
+  seats?: Seat[]; // Add seats array
 }
 
 export interface SeatMapData {
@@ -53,6 +55,22 @@ export interface SeatMapTheme {
   sectionColors: string[];
   stageColor: string;
   textColor: string;
+  colors?: {
+    background: string;
+    accessible: string;
+    selectedBorder: string;
+    sectionLabel: string;
+  };
+  fonts?: {
+    seatNumber: {
+      family: string;
+      weight: string;
+    };
+    sectionLabel: {
+      family: string;
+      weight: string;
+    };
+  };
 }
 
 export interface SeatRenderProps {
@@ -70,6 +88,72 @@ export interface SeatRenderProps {
   theme?: SeatMapTheme;
 }
 
+// Missing type exports
+export interface SeatMapContainerProps {
+  showId?: string;
+  seatMapData?: SeatMapData;
+  seats?: Seat[];
+  sections?: SectionInfo[];
+  selectedSeatIds?: Set<string>;
+  selectedSeats?: Seat[];
+  onSeatClick?: (seat: Seat) => void;
+  onSeatSelect?: (seat: Seat) => void;
+  onSeatDeselect?: (seat: Seat) => void;
+  onSeatHover?: (seat: Seat) => void;
+  theme?: SeatMapTheme;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+export interface ViewportState {
+  x: number;
+  y: number;
+  zoom: number;
+  panX?: number;
+  panY?: number;
+  bounds?: any;
+}
+
+export interface SectionRenderProps {
+  section: SectionInfo;
+  seats: Seat[];
+  selectedSeatIds: Set<string>;
+  hoveredSeatId?: string;
+  seatRadius: number;
+  showLabels: boolean;
+  showDetails: boolean;
+  onSeatClick: (seat: Seat) => void;
+  onSeatHover: (seat: Seat) => void;
+  coordinateEngine: any;
+  zoomLevel: number;
+  hideSectionLabels: boolean;
+  theme?: SeatMapTheme;
+}
+
+export interface SectionRendererInternalProps {
+  section: SectionInfo;
+  seats: Seat[];
+  selectedSeatIds: Set<string>;
+  hoveredSeatId?: string;
+  seatRadius: number;
+  showLabels: boolean;
+  showDetails: boolean;
+  onSeatClick: (seat: Seat) => void;
+  onSeatHover: (seat: Seat) => void;
+}
+
+export interface SVGCanvasProps {
+  width: number;
+  height: number;
+  viewBox: string;
+  children: React.ReactNode;
+  onWheel?: (event: React.WheelEvent) => void;
+  onMouseDown?: (event: React.MouseEvent) => void;
+  onMouseMove?: (event: React.MouseEvent) => void;
+  onMouseUp?: (event: React.MouseEvent) => void;
+  className?: string;
+}
+
 export interface CoordinateTransform {
   translateX: number;
   translateY: number;
@@ -85,15 +169,37 @@ export interface ViewportBounds {
   height: number;
 }
 
+export const DEFAULT_SEAT_MAP_CONFIG = {
+  seatRadius: 12,
+  showLabels: true,
+  showDetails: false,
+  hideSectionLabels: false,
+  minZoom: 0.5,
+  maxZoom: 3,
+  zoomStep: 0.1,
+  interaction: {
+    enabled: true,
+    panEnabled: true,
+    zoomEnabled: true
+  },
+  coordinateSystem: 'viewport'
+};
+
 export const DEFAULT_THEME = {
   fonts: {
     seatNumber: {
       family: 'Arial, sans-serif',
       weight: 'normal'
+    },
+    sectionLabel: {
+      family: 'Arial, sans-serif',
+      weight: 'bold'
     }
   },
   colors: {
+    background: '#f8f9fa',
     accessible: '#007bff',
-    selectedBorder: '#ffd700'
+    selectedBorder: '#ffd700',
+    sectionLabel: '#333333'
   }
 }; 
