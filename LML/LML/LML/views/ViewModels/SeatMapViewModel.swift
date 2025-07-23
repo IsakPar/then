@@ -10,6 +10,7 @@ import SwiftUI
 import Combine
 import Stripe
 import StripePaymentSheet
+import StripeApplePay
 
 // MARK: - Seat Map View Model
 @MainActor
@@ -191,6 +192,18 @@ class SeatMapViewModel: ObservableObject {
         configuration.customer = .init(id: authState.user?.id ?? "", ephemeralKeySecret: "")
         configuration.allowsDelayedPaymentMethods = true
         
+        // Enable Apple Pay with proper merchant configuration
+        configuration.applePay = PaymentSheet.ApplePayConfiguration(
+            merchantId: "merchant.lml-tickets.com.LML",
+            merchantCountryCode: "GB"
+        )
+        
+        // Configure additional payment options
+        configuration.primaryButtonLabel = "Complete Payment"
+        configuration.defaultBillingDetails.name = "LastMinuteLive Customer"
+        
+        print("💳 Apple Pay configured with merchant ID: merchant.lml-tickets.com.LML")
+        
         paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
         showingPaymentSheet = true
     }
@@ -231,6 +244,9 @@ class SeatMapViewModel: ObservableObject {
         
         // Generate booking reference
         bookingReference = generateBookingReference()
+        
+        // 🎫 CRITICAL: Save ticket to persistent storage for tickets tab
+        saveTicketToPersistentStorage()
         
         // 🎫 CRITICAL: Mark seats as permanently booked
         markSeatsAsBooked(selectedSeats)
@@ -500,6 +516,42 @@ class SeatMapViewModel: ObservableObject {
         let reference = String((0..<3).compactMap { _ in letters.randomElement() }) +
                        String((0..<6).compactMap { _ in numbers.randomElement() })
         return "LML\(reference)"
+    }
+    
+    // MARK: - Ticket Persistence
+    
+    /// Saves the completed ticket to persistent storage for the tickets tab
+    private func saveTicketToPersistentStorage() {
+        Task {
+            do {
+                // Create a Ticket object for the tickets tab
+                let ticket = Ticket(
+                    id: UUID().uuidString,
+                    showName: "Hamilton", // TODO: Make this dynamic based on current show
+                    venueName: "Victoria Palace Theatre", // TODO: Make this dynamic
+                    showDate: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date(),
+                    showTime: "7:30 PM", // TODO: Make this dynamic
+                    seatInfo: bookedSeats.map { "\($0.section) R\($0.row) S\($0.number)" }.joined(separator: ", "),
+                    totalPrice: totalPrice,
+                    status: .upcoming,
+                    bookingReference: bookingReference
+                )
+                
+                // Get existing tickets and add the new one
+                let cacheService = CacheService.shared
+                var existingTickets = await cacheService.getCachedTickets() ?? []
+                existingTickets.append(ticket)
+                
+                // Save updated tickets list
+                await cacheService.cacheTickets(existingTickets)
+                
+                print("✅ Ticket saved to persistent storage with reference: \(bookingReference)")
+                print("🎫 Total tickets in storage: \(existingTickets.count)")
+                
+            } catch {
+                print("❌ Failed to save ticket to persistent storage: \(error)")
+            }
+        }
     }
     
     // MARK: - Seat Booking Persistence

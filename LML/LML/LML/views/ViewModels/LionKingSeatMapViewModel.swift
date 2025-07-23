@@ -10,6 +10,7 @@ import SwiftUI
 import Combine
 import Stripe
 import StripePaymentSheet
+import StripeApplePay
 
 // MARK: - Lion King Seat Map View Model
 @MainActor
@@ -331,6 +332,9 @@ class LionKingSeatMapViewModel: ObservableObject {
         // Generate booking reference
         bookingReference = generateBookingReference()
         
+        // 🎫 CRITICAL: Save ticket to persistent storage for tickets tab
+        saveTicketToPersistentStorage()
+        
         // Clear selection and mark booked seats as unavailable
         for index in allSeats.indices {
             if allSeats[index].isSelected {
@@ -371,6 +375,42 @@ class LionKingSeatMapViewModel: ObservableObject {
         let timestamp = String(Int(Date().timeIntervalSince1970))
         let random = String(format: "%04d", Int.random(in: 1000...9999))
         return "\(prefix)\(timestamp.suffix(6))\(random)"
+    }
+    
+    // MARK: - Ticket Persistence
+    
+    /// Saves the completed ticket to persistent storage for the tickets tab
+    private func saveTicketToPersistentStorage() {
+        Task {
+            do {
+                // Create a Ticket object for the tickets tab
+                let ticket = Ticket(
+                    id: UUID().uuidString,
+                    showName: "The Lion King",
+                    venueName: "Lyceum Theatre",
+                    showDate: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date(),
+                    showTime: "7:30 PM",
+                    seatInfo: bookedSeats.map { "\($0.section) R\($0.row) S\($0.number)" }.joined(separator: ", "),
+                    totalPrice: totalPrice,
+                    status: .upcoming,
+                    bookingReference: bookingReference
+                )
+                
+                // Get existing tickets and add the new one
+                let cacheService = CacheService.shared
+                var existingTickets = await cacheService.getCachedTickets() ?? []
+                existingTickets.append(ticket)
+                
+                // Save updated tickets list
+                await cacheService.cacheTickets(existingTickets)
+                
+                print("✅ Lion King ticket saved to persistent storage with reference: \(bookingReference)")
+                print("🎫 Total tickets in storage: \(existingTickets.count)")
+                
+            } catch {
+                print("❌ Failed to save Lion King ticket to persistent storage: \(error)")
+            }
+        }
     }
     
     // MARK: - Private Methods

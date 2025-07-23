@@ -169,7 +169,7 @@ struct PaymentSuccessView: View {
                             
                             Spacer()
                             
-                            Text("£\(group.totalPrice / 100)")
+                            Text("£\(totalAmount / 100)")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.white)
                         }
@@ -373,18 +373,78 @@ struct PaymentSuccessView: View {
     }
     
     private func addToAppleWallet() {
-        // TODO: Implement Apple Wallet pass creation
-        showingAddToWallet = true
+        // For now, show a message that Apple Wallet functionality is coming soon
+        // In a full implementation, you would create a PKPass object
+        let alert = UIAlertController(
+            title: "Apple Wallet",
+            message: "Apple Wallet pass creation is coming soon! Your QR code can be saved to Photos for now.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Save QR to Photos", style: .default) { _ in
+            self.saveQRCodeToPhotos()
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            rootViewController.present(alert, animated: true)
+        }
+    }
+    
+    private func saveQRCodeToPhotos() {
+        guard let qrCodeImage = generateQRCode(from: bookingReference) else { return }
+        
+        UIImageWriteToSavedPhotosAlbum(qrCodeImage, nil, nil, nil)
+        
+        // Show confirmation
+        let alert = UIAlertController(
+            title: "Saved!",
+            message: "QR code has been saved to your Photos app.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            rootViewController.present(alert, animated: true)
+        }
     }
     
     private func shareTicket() {
-        // TODO: Implement sharing functionality
-        let shareText = "I just booked \(showTitle) at \(venueTitle)! 🎭"
-        let activityVC = UIActivityViewController(activityItems: [shareText], applicationActivities: nil)
+        let shareText = """
+        🎭 \(showTitle) at \(venueTitle)
+        📅 \(formatDisplayDate(showDate)) at \(showTime)
+        🎫 Booking Reference: \(bookingReference)
+        💷 Total: \(formatPrice(totalAmount))
+        
+        Booked with Last Minute Live!
+        """
+        
+        var shareItems: [Any] = [shareText]
+        
+        // Add QR code image if available
+        if let qrCodeImage = generateQRCode(from: bookingReference) {
+            shareItems.append(qrCodeImage)
+        }
+        
+        let activityVC = UIActivityViewController(activityItems: shareItems, applicationActivities: nil)
+        
+        // For iPad
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            activityVC.popoverPresentationController?.sourceView = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first?.windows.first
+            activityVC.popoverPresentationController?.sourceRect = CGRect(x: 100, y: 100, width: 1, height: 1)
+        }
         
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            window.rootViewController?.present(activityVC, animated: true)
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            rootViewController.present(activityVC, animated: true)
         }
     }
 }
