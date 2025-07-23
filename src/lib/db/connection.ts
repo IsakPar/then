@@ -5,27 +5,27 @@ import * as schema from './schema';
 // Database connection configuration
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/lastminutelive';
 
-// Check if we're in a build environment (Railway build step)
+// Check if we're in a build environment
 const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL;
 
-let client: postgres.Sql;
 let db: any;
 
 if (isBuildTime) {
-  // During build time on Railway, create a dummy client to avoid connection errors
+  // During build time, create a completely mocked database client
   console.log('🔧 Build time detected - using dummy database client');
   
-  // Create a minimal mock client for build time
-  client = {
-    execute: () => Promise.resolve([]),
-    query: () => Promise.resolve([]),
-    end: () => Promise.resolve(),
-  } as any;
-  
-  db = drizzle(client, { schema });
+  // Create a mock drizzle instance that returns empty results for all operations
+  db = {
+    // Mock all the common drizzle operations
+    select: () => ({ from: () => Promise.resolve([]) }),
+    insert: () => ({ values: () => Promise.resolve([]) }),
+    update: () => ({ set: () => ({ where: () => Promise.resolve([]) }) }),
+    delete: () => ({ where: () => Promise.resolve([]) }),
+    // Add any other drizzle methods you use
+  };
 } else {
   // Normal runtime client with connection pooling
-  client = postgres(connectionString, {
+  const client = postgres(connectionString, {
     max: 5,
     ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
     debug: process.env.NODE_ENV === 'development' ? false : false,

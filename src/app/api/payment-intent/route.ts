@@ -9,9 +9,20 @@ import { eq } from 'drizzle-orm'
 // Force dynamic rendering to prevent build-time errors
 export const dynamic = 'force-dynamic';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil'
-})
+// Initialize Stripe only when needed (not during build time)
+let stripe: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-06-30.basil'
+    });
+  }
+  return stripe;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,7 +103,7 @@ export async function POST(request: NextRequest) {
     const totalAmount = specificSeatIds.length * showData.min_price * 100
 
     // Create PaymentIntent instead of checkout session
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: totalAmount,
       currency: 'gbp',
       description: `${showData?.title || 'Show'} - ${specificSeatIds.length} ticket(s)`,
