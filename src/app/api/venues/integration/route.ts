@@ -4,6 +4,9 @@ import { VenueAPISimulator } from '@/lib/venue-simulator/VenueAPISimulator';
 import fs from 'fs/promises';
 import path from 'path';
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 /**
  * Venue Integration Management API
  * 

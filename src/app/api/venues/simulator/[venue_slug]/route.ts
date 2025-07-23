@@ -3,6 +3,9 @@ import { VenueAPISimulator } from '@/lib/venue-simulator/VenueAPISimulator';
 import { VenueAdapter } from '@/lib/venue-integration/VenueAdapter';
 import { VenueAPIError } from '@/types/venue-api';
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 /**
  * Venue Simulator API - Simulates third-party venue APIs
  * 
