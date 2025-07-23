@@ -5,6 +5,9 @@ import { eq, and } from 'drizzle-orm';
 import { generateBagleyWrightTheater } from '@/lib/seatmaps/curved-theater-generator';
 import { BAGLEY_WRIGHT_LAYOUT, BAGLEY_WRIGHT_PRICING } from '@/lib/seatmaps/bagley-wright-layout';
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 /**
  * API Endpoint to Regenerate Hamilton Seat Map with Bagley Wright Theater Layout
  * 

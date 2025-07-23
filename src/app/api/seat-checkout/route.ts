@@ -5,6 +5,9 @@ import { db } from '@/lib/db/connection'
 import { shows, seats, seatMaps } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 // TODO: Require auth - seat reservations should be protected
 // import { getServerSession } from 'next-auth'
 // import { authOptions } from '@/lib/auth'

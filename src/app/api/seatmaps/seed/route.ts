@@ -4,6 +4,9 @@ import { db } from '@/lib/db/connection';
 // import { getAllSeatMapTemplates } from '@/lib/seatmaps/generic';
 // import { PROFESSIONAL_THEATER } from '@/lib/seatmaps/generic/professional-theater';
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Seatmap seeding temporarily disabled due to missing dependencies')

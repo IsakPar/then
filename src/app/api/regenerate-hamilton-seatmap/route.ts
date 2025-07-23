@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { seats, sections, shows, seatMaps } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+// import { TheaterCoordinateGenerator } from '@/lib/seatmaps/theater-coordinate-generator';
+
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
 
 // Professional theater layout configuration for Hamilton/Victoria Palace Theater
 const HAMILTON_SEAT_CONFIG = {

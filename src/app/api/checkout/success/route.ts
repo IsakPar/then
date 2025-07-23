@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getBookingByValidationCode, confirmSeatReservations } from '@/lib/db/queries'
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 // In-memory cache to prevent duplicate processing - only cache successful results
 const processedSessions = new Map<string, any>()
 

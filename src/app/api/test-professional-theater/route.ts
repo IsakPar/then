@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 // import { PROFESSIONAL_THEATER } from '@/lib/seatmaps/generic/professional-theater';
 // import { ProfessionalSeatGenerator } from '@/lib/seatmaps/professional-seat-generator';
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     console.log('🔄 Professional theater test temporarily disabled due to missing dependencies')

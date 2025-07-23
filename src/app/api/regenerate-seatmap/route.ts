@@ -5,6 +5,9 @@ import { eq } from 'drizzle-orm'
 // import { PROFESSIONAL_THEATER } from '@/lib/seatmaps/generic/professional-theater'
 // import { ProfessionalSeatGenerator } from '@/lib/seatmaps/professional-seat-generator'
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Seatmap regeneration temporarily disabled due to missing dependencies')

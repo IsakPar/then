@@ -6,6 +6,9 @@ import { db } from '@/lib/db/connection'
 import { shows, seats } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-06-30.basil'
 })
