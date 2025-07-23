@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import crypto from 'crypto'
+import { paymentReservationService } from '@/lib/services/PaymentReservationService'
 import { createReservations, getShowWithPricing } from '@/lib/db/queries'
 import { db } from '@/lib/db/connection'
 import { shows, seats } from '@/lib/db/schema'
@@ -44,53 +45,33 @@ export async function POST(request: NextRequest) {
     console.log('🎫 Creating PaymentIntent for show:', showId)
     console.log('🎯 Specific seat IDs to reserve:', specificSeatIds)
 
-    // 🔄 Get actual seat UUIDs for development (same logic as checkout)
-    let realSeatIds: string[]
+    // 🚨 BULLETPROOF RESERVATION SYSTEM: Phase 1 - Create temporary reservation
+    const sessionToken = request.headers.get('authorization')?.replace('Bearer ', '') || `guest_${Date.now()}`
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🛠️ DEV MODE: Getting real seat UUIDs for testing...')
-      console.log('⚠️ NOTE: Using any available seats as the showId mapping will be fixed')
-      
-      // TEMPORARY FIX: Get seats from any show until show ID mapping is resolved
-      const availableSeats = await db
-        .select({ id: seats.id })
-        .from(seats)
-        .limit(specificSeatIds.length)
-      
-      realSeatIds = availableSeats.map(seat => seat.id)
-      console.log(`✅ Using ${realSeatIds.length} real seat UUIDs for testing:`, realSeatIds.slice(0, 2))
-    } else {
-      // Production: Use proper hardcoded seat mapping (to be implemented)
-      realSeatIds = specificSeatIds // Placeholder
-    }
-
-    if (realSeatIds.length === 0) {
-      console.error('❌ No seats available for testing')
-      return NextResponse.json({ 
-        error: 'No seats available for testing',
-        details: 'Could not find available seats in database'
-      }, { status: 400 })
-    }
-
-    // Generate session token for this reservation
-    const sessionToken = crypto.randomUUID()
-
-    // Reserve the specific seats
-    const reservationResult = await createReservations(
-      realSeatIds,
-      sessionToken,
-      15 // 15 minutes expiration
+    console.log('🎯 Creating bulletproof seat reservation...')
+    const reservationResult = await paymentReservationService.createPaymentReservation(
+      showId,
+      specificSeatIds,
+      sessionToken
     )
 
-    if (!reservationResult || reservationResult.length === 0) {
-      console.log('⚠️ Reservation failed: No results returned')
+    if (!reservationResult.success) {
+      console.error('❌ Failed to create seat reservation:', reservationResult.error)
       return NextResponse.json(
-        { error: 'Failed to reserve seats' },
-        { status: 400 }
+        { 
+          error: reservationResult.error || 'Failed to reserve seats',
+          conflictSeats: reservationResult.conflictSeats 
+        },
+        { status: 409 }
       )
     }
 
-    console.log('✅ Reservation successful. Reserved seats:', reservationResult.length)
+    const reservation = reservationResult.reservation!
+    console.log(`✅ Seats reserved successfully: ${reservation.reservationId}`)
+    console.log(`💰 Total amount: £${reservation.totalAmountPence / 100}`)
+
+    // No need for legacy reservation - bulletproof system handles everything
+    console.log('✅ Reservation successful. Reserved seats:', reservation.seatIds.length)
 
     // Get show information for pricing
     console.log('🎭 Getting show pricing info for:', showId)
@@ -101,21 +82,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Show not found' }, { status: 404 })
     }
 
-    // Calculate total amount in pence
-    const totalAmount = specificSeatIds.length * showData.min_price * 100
+    // Use bulletproof reservation amount (already calculated)
+    const totalAmount = reservation.totalAmountPence
 
-    // Create PaymentIntent instead of checkout session
+    // Create PaymentIntent with reservation tracking
     const paymentIntent = await getStripe().paymentIntents.create({
       amount: totalAmount,
       currency: 'gbp',
-      description: `${showData?.title || 'Show'} - ${specificSeatIds.length} ticket(s)`,
+      description: `${showData?.title || 'Show'} - ${reservation.seatIds.length} ticket(s)`,
       metadata: {
+        reservation_id: reservation.reservationId,
         reservation_session_token: sessionToken,
         show_id: showId,
-        seat_ids: specificSeatIds.join(','),
+        seat_ids: reservation.seatIds.join(','),
         client_type: 'native_ios',
         show_title: showData?.title || 'Unknown Show',
-        seat_count: specificSeatIds.length.toString()
+        seat_count: reservation.seatIds.length.toString(),
+        expires_at: reservation.expiresAt
       },
       // Enable automatic payment methods for better user experience
       automatic_payment_methods: {
@@ -124,18 +107,38 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // 🚨 BULLETPROOF RESERVATION SYSTEM: Phase 2 - Start payment process
+    const paymentStartResult = await paymentReservationService.startPaymentProcess(
+      reservation.reservationId,
+      paymentIntent.id
+    )
+
+    if (!paymentStartResult.success) {
+      console.error('❌ Failed to start payment process:', paymentStartResult.error)
+      // Cancel the Stripe payment intent
+      await getStripe().paymentIntents.cancel(paymentIntent.id)
+      return NextResponse.json(
+        { error: 'Failed to start payment process' },
+        { status: 500 }
+      )
+    }
+
+    console.log(`💳 Payment process started: ${paymentIntent.id} linked to reservation ${reservation.reservationId}`)
+
     console.log('✅ PaymentIntent created:', paymentIntent.id)
     console.log('💰 Amount:', `£${(totalAmount / 100).toFixed(2)}`)
 
     return NextResponse.json({
       paymentIntentId: paymentIntent.id,
       clientSecret: paymentIntent.client_secret,
-      reservationId: sessionToken,
+      reservationId: reservation.reservationId,
       amount: totalAmount,
       currency: 'gbp',
       showTitle: showData?.title,
-      seatCount: specificSeatIds.length,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 minutes
+      seatCount: reservation.seatIds.length,
+      expiresAt: reservation.expiresAt,
+      seatIds: reservation.seatIds,
+      sessionToken: sessionToken
     })
 
   } catch (error) {
