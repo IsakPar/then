@@ -49,6 +49,10 @@ struct AuthButton: View {
                 reduceMotion ? nil : AppAnimations.buttonPress,
                 value: isPressed
             )
+            .onTapGesture {
+                print("🟡 AuthButton: Direct onTapGesture triggered for \"\(title)\"")
+                handleTap()
+            }
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(isLoading)
@@ -140,17 +144,28 @@ struct AuthButton: View {
     }
     
     private func handleTap() {
-        guard !isLoading else { return }
+        print("🟢 AuthButton: handleTap() called for \"\(title)\"")
+        print("🔍 AuthButton: isLoading = \(isLoading)")
+        
+        guard !isLoading else { 
+            print("❌ AuthButton: Tap blocked - button is loading")
+            return 
+        }
+        
+        print("✅ AuthButton: Executing button action for \"\(title)\"")
         
         // Provide haptic feedback based on button style
         switch style {
         case .primary:
             HapticManager.impact(.medium)
+            print("📳 AuthButton: Primary haptic feedback")
         case .secondary, .apple, .google:
             HapticManager.impact(.light)
+            print("📳 AuthButton: Light haptic feedback")
         }
         
         action()
+        print("🎯 AuthButton: Action completed for \"\(title)\"")
     }
 }
 

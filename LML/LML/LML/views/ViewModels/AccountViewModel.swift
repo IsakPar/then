@@ -34,15 +34,23 @@ class AccountViewModel: ObservableObject {
     // MARK: - Authentication Actions
     
     func showSignUp() {
+        print("🔵 AccountViewModel: showSignUp() called")
+        print("🔍 AccountViewModel: Current auth state: \(authManager.authState)")
         showingSignUp = true
+        print("✅ AccountViewModel: showingSignUp set to true")
     }
     
     func showSignIn() {
+        print("🔵 AccountViewModel: showSignIn() called") 
+        print("🔍 AccountViewModel: Current auth state: \(authManager.authState)")
         showingSignIn = true
+        print("✅ AccountViewModel: showingSignIn set to true")
     }
     
     func showForgotPassword() {
+        print("🔵 AccountViewModel: showForgotPassword() called")
         showingForgotPassword = true
+        print("✅ AccountViewModel: showingForgotPassword set to true")
     }
     
     func signInWithApple() {
