@@ -115,10 +115,9 @@ class DataService: DataServiceProtocol {
     // MARK: - Mock Data Generation (Development Only)
     
     private func generateMockShows() -> [Show] {
-        guard !config.isProductionBuild else {
-            print("🚫 Mock data blocked in production build")
-            return []
-        }
+        // 🎭 INVESTOR DEMO: Always allow Hamilton and Lion King for demos
+        // Production backend connection + investor demo shows
+        print("🎭 Generating investor demo shows (Hamilton & Lion King)...")
         
         let venues = generateMockVenues()
         let calendar = Calendar.current
