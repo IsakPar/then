@@ -92,6 +92,47 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
+    // Check for bulk insert mappings request
+    if (body.action === 'bulk-insert-mappings' && Array.isArray(body.mappings)) {
+      console.log(`🎭 Bulk inserting ${body.mappings.length} hardcoded seat mappings...`);
+      
+      const { hardcodedSeatMappings } = await import('@/lib/db/schema');
+      
+      try {
+        // Insert mappings in chunks to avoid query size limits
+        const chunkSize = 100;
+        let inserted = 0;
+        
+        for (let i = 0; i < body.mappings.length; i += chunkSize) {
+          const chunk = body.mappings.slice(i, i + chunkSize);
+          
+          const mappingData = chunk.map(mapping => ({
+            showId: mapping.showId,
+            hardcodedSeatId: mapping.hardcodedSeatId,
+            realSeatId: mapping.realSeatId
+          }));
+          
+          await db.insert(hardcodedSeatMappings).values(mappingData);
+          inserted += chunk.length;
+          
+          console.log(`   ✅ Inserted ${inserted}/${body.mappings.length} mappings`);
+        }
+        
+        return NextResponse.json({
+          success: true,
+          message: `Successfully inserted ${inserted} hardcoded seat mappings`,
+          inserted: inserted
+        });
+        
+      } catch (error) {
+        console.error('❌ Bulk insert error:', error);
+        return NextResponse.json({
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to insert mappings'
+        }, { status: 500 });
+      }
+    }
+    
     // Check for migration request
     if (body.action === 'create-auth-tables' && body.confirm === 'lastminutelive-auth-migration') {
       console.log('🚀 Creating auth tables...');
