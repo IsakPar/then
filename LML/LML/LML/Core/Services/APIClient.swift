@@ -312,7 +312,7 @@ enum APIEnvironment {
     var baseURL: URL {
         switch self {
         case .development:
-            return URL(string: "https://then-production.up.railway.app")!  // Railway production server
+            return URL(string: "http://localhost:3001")!  // Local Next.js development server (fixed!)
         case .staging:
             return URL(string: "https://staging-api.lastminutelive.com")!
         case .production:
