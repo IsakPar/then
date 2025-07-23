@@ -53,6 +53,8 @@ class APIClient: APIClientProtocol {
         self.jsonDecoder.dateDecodingStrategy = .formatted(dateFormatter)
         
         print("🔍 APIClient: Configured JSON decoder with custom date format for milliseconds")
+        print("🌐 APIClient: Initialized with environment: \(environment)")
+        print("🌐 APIClient: Base URL: \(baseURL.absoluteString)")
     }
     
     // MARK: - Authentication Endpoints
