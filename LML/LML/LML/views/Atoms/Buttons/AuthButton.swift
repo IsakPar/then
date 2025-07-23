@@ -57,14 +57,23 @@ struct AuthButton: View {
             hint: accessibilityHint,
             isEnabled: !isLoading
         )
-        .onLongPressGesture(minimumDuration: 0) { pressing in
-            guard !isLoading else { return }
-            withAnimation(AppAnimations.buttonPress) {
-                isPressed = pressing
-            }
-        } perform: {
-            // Long press handled by gesture
-        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !isPressed && !isLoading {
+                        withAnimation(AppAnimations.buttonPress) {
+                            isPressed = true
+                        }
+                    }
+                }
+                .onEnded { _ in
+                    if isPressed {
+                        withAnimation(AppAnimations.buttonPress) {
+                            isPressed = false
+                        }
+                    }
+                }
+        )
     }
     
     private var buttonIcon: some View {
