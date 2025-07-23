@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useReducer, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import HardcodedSeatMap from '@/components/HardcodedSeatMap'
+import GuestEmailModal from '@/components/GuestEmailModal'
 import { SeatData } from '@/lib/seatmaps/CoordinateEngine'
 
 // ============================================================================
@@ -142,6 +144,11 @@ export default function SeatSelectionPage() {
   const params = useParams()
   const router = useRouter()
   const showId = params.id as string
+  const { data: session, status } = useSession()
+  
+  // Guest email modal state
+  const [showGuestModal, setShowGuestModal] = useState(false)
+  const [guestEmailLoading, setGuestEmailLoading] = useState(false)
   
   // Request deduplication
   const activeRequests = useRef(new Set<string>())
@@ -350,10 +357,27 @@ export default function SeatSelectionPage() {
       return
     }
 
+    // 🎯 CORRECT FLOW: Check authentication first
+    if (status === 'loading') {
+      console.log('🔄 [SeatSelection] Authentication still loading, please wait...')
+      return
+    }
+
+    if (!session) {
+      console.log('🎭 [SeatSelection] User not authenticated, showing guest email modal')
+      setShowGuestModal(true)
+      return
+    }
+
+    // User is authenticated, proceed directly to payment
+    console.log('✅ [SeatSelection] User authenticated, proceeding to checkout')
+    await performCheckout()
+  }, [state.selectedSeats, session, status])
+
+  const performCheckout = useCallback(async () => {
     dispatch({ type: 'SET_PURCHASING', purchasing: true })
     
     try {
-      // 🔥 CRITICAL FIX: Send specific seat IDs instead of section bookings
       console.log('🎫 [SeatSelection] Reserving specific seats:', state.selectedSeats)
       
       // Extract the specific database seat IDs
@@ -400,6 +424,54 @@ export default function SeatSelectionPage() {
       dispatch({ type: 'SET_PURCHASING', purchasing: false })
     }
   }, [state.selectedSeats, state.show?.id])
+
+  const handleGuestEmailSubmit = useCallback(async (email: string) => {
+    setGuestEmailLoading(true)
+    
+    try {
+      console.log('🎭 [SeatSelection] Creating guest session for:', email)
+      
+      // Create guest session
+      const guestResponse = await fetch('/api/guest-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          deviceInfo: {
+            platform: 'web',
+            userAgent: navigator.userAgent
+          }
+        }),
+      })
+
+      if (!guestResponse.ok) {
+        const errorData = await guestResponse.json()
+        throw new Error(errorData.error || 'Failed to create guest session')
+      }
+
+      const guestData = await guestResponse.json()
+      console.log('✅ [SeatSelection] Guest session created:', guestData)
+
+      // Store guest session in localStorage for checkout success page
+      localStorage.setItem('guestSession', JSON.stringify({
+        sessionToken: guestData.sessionToken,
+        user: guestData.user,
+        email: email
+      }))
+
+      // Close modal and proceed to checkout
+      setShowGuestModal(false)
+      await performCheckout()
+      
+    } catch (error) {
+      console.error('❌ [SeatSelection] Guest session creation failed:', error)
+      throw error // Re-throw to show error in modal
+    } finally {
+      setGuestEmailLoading(false)
+    }
+  }, [performCheckout])
 
   // ============================================================================
   // EFFECTS
@@ -675,6 +747,14 @@ export default function SeatSelectionPage() {
           </div>
         </div>
       </div>
+
+      {/* Guest Email Modal */}
+      <GuestEmailModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+        onSubmit={handleGuestEmailSubmit}
+        isLoading={guestEmailLoading}
+      />
     </div>
   )
 } 
