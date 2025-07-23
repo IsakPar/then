@@ -379,6 +379,33 @@ export const userVenuesRelations = relations(userVenues, ({ one }) => ({
 }));
 
 // ============================================================================
+// GUEST SESSION TABLES
+// ============================================================================
+
+// Guest sessions tracking for temporary users
+export const guestSessions = pgTable('guest_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionToken: text('session_token').notNull().unique(),
+  email: text('email').notNull(),
+  deviceInfo: jsonb('device_info'), // device type, OS, app version
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  convertedAt: timestamp('converted_at', { withTimezone: true }), // when became registered user
+  convertedUserId: uuid('converted_user_id').references(() => users.id, { onDelete: 'set null' }),
+}, (table) => ({
+  sessionTokenIndex: index('idx_guest_sessions_token').on(table.sessionToken),
+  emailIndex: index('idx_guest_sessions_email').on(table.email),
+  expiresIndex: index('idx_guest_sessions_expires').on(table.expiresAt),
+}));
+
+export const guestSessionsRelations = relations(guestSessions, ({ one }) => ({
+  convertedUser: one(users, {
+    fields: [guestSessions.convertedUserId],
+    references: [users.id],
+  }),
+}));
+
+// ============================================================================
 // TYPE EXPORTS
 // ============================================================================
 
@@ -397,6 +424,9 @@ export type NewSection = typeof sections.$inferInsert;
 export type Seat = typeof seats.$inferSelect;
 export type NewSeat = typeof seats.$inferInsert;
 export type SeatStatus = typeof seats.status.enumValues[number];
+
+export type GuestSession = typeof guestSessions.$inferSelect;
+export type NewGuestSession = typeof guestSessions.$inferInsert;
 
 export type Reservation = typeof reservations.$inferSelect;
 export type NewReservation = typeof reservations.$inferInsert;

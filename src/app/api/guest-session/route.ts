@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
+import { db } from '@/lib/db/connection';
+import { guestSessions } from '@/lib/db/schema';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +33,20 @@ export async function POST(request: NextRequest) {
     // Generate guest user ID and session token
     const guestUserId = `guest_${randomUUID()}`;
     const sessionToken = `guest_session_${randomUUID()}`;
+    
+    // Set expiration to 7 days from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Save guest session to database
+    const [savedGuestSession] = await db.insert(guestSessions).values({
+      sessionToken: sessionToken,
+      email: email,
+      deviceInfo: deviceInfo || {},
+      expiresAt: expiresAt
+    }).returning();
+
+    console.log(`💾 Guest session saved to database with ID: ${savedGuestSession.id}`);
 
     // Create guest user object
     const guestUser = {
@@ -43,7 +59,7 @@ export async function POST(request: NextRequest) {
       isGuest: true,
       emailVerified: false,
       biometricEnabled: false,
-      createdAt: new Date().toISOString()
+      createdAt: savedGuestSession.createdAt.toISOString()
     };
 
     // Response matching iOS app's GuestResponse model
