@@ -296,19 +296,97 @@ export async function updateSeatsStatus(seatIds: string[], status: SeatStatus) {
 }
 
 /**
+ * Get show UUID by slug pattern (e.g., "hamilton-victoria-palace" -> actual UUID)
+ */
+export async function getShowUUIDBySlug(slug: string): Promise<string | null> {
+  console.log(`🔍 Looking up show UUID for slug: ${slug}`);
+  
+  // For hamilton-victoria-palace, search for Hamilton at Victoria Palace
+  if (slug === "hamilton-victoria-palace") {
+    const result = await db
+      .select({ id: shows.id, title: shows.title, venueName: venues.name })
+      .from(shows)
+      .innerJoin(venues, eq(shows.venueId, venues.id))
+      .where(
+        and(
+          eq(shows.isActive, true),
+          sql`LOWER(${shows.title}) LIKE '%hamilton%'`,
+          sql`LOWER(${venues.name}) LIKE '%victoria%palace%'`
+        )
+      )
+      .limit(1);
+    
+    if (result[0]) {
+      console.log(`✅ Found Hamilton show: ${result[0].title} at ${result[0].venueName} (UUID: ${result[0].id})`);
+      return result[0].id;
+    }
+  }
+  
+  // Generic slug-to-show mapping for other shows
+  const parts = slug.split('-');
+  if (parts.length >= 2) {
+    const showPattern = parts[0]; // e.g., "hamilton", "lionking"
+    const venuePattern = parts.slice(1).join('%'); // e.g., "victoria%palace"
+    
+    const result = await db
+      .select({ id: shows.id, title: shows.title, venueName: venues.name })
+      .from(shows)
+      .innerJoin(venues, eq(shows.venueId, venues.id))
+      .where(
+        and(
+          eq(shows.isActive, true),
+          sql`LOWER(${shows.title}) LIKE ${'%' + showPattern + '%'}`,
+          sql`LOWER(${venues.name}) LIKE ${'%' + venuePattern + '%'}`
+        )
+      )
+      .limit(1);
+    
+    if (result[0]) {
+      console.log(`✅ Found show: ${result[0].title} at ${result[0].venueName} (UUID: ${result[0].id})`);
+      return result[0].id;
+    }
+  }
+  
+  console.warn(`⚠️ No show found for slug: ${slug}`);
+  return null;
+}
+
+/**
  * Convert hardcoded seat IDs to real database UUIDs
  * This function handles the mapping between hardcoded seat map IDs (like "back-1-14") 
  * and actual database UUIDs for the Hamilton demo show
+ * 
+ * Updated to handle show slugs and convert them to UUIDs first
  */
 export async function convertHardcodedSeatIds(
-  showId: string,
+  showIdOrSlug: string,
   hardcodedSeatIds: string[]
 ): Promise<string[]> {
   if (hardcodedSeatIds.length === 0) return [];
 
-  console.log(`🔄 Converting ${hardcodedSeatIds.length} hardcoded seat IDs for show ${showId}`);
+  console.log(`🔄 Converting ${hardcodedSeatIds.length} hardcoded seat IDs for show ${showIdOrSlug}`);
   console.log(`🎯 Hardcoded IDs:`, hardcodedSeatIds);
 
+  // Step 1: Convert show slug to UUID if needed
+  let showUUID: string;
+  
+  // Check if the input is already a UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(showIdOrSlug)) {
+    showUUID = showIdOrSlug;
+    console.log(`✅ Input is already a UUID: ${showUUID}`);
+  } else {
+    // Convert slug to UUID
+    const foundUUID = await getShowUUIDBySlug(showIdOrSlug);
+    if (!foundUUID) {
+      console.error(`❌ Could not find show UUID for slug: ${showIdOrSlug}`);
+      return [];
+    }
+    showUUID = foundUUID;
+    console.log(`🗺️ Converted slug "${showIdOrSlug}" to UUID: ${showUUID}`);
+  }
+
+  // Step 2: Query hardcoded seat mappings using the UUID
   const mappings = await db
     .select({
       hardcodedSeatId: hardcodedSeatMappings.hardcodedSeatId,
@@ -317,7 +395,7 @@ export async function convertHardcodedSeatIds(
     .from(hardcodedSeatMappings)
     .where(
       and(
-        eq(hardcodedSeatMappings.showId, showId),
+        eq(hardcodedSeatMappings.showId, showUUID),
         inArray(hardcodedSeatMappings.hardcodedSeatId, hardcodedSeatIds)
       )
     );
