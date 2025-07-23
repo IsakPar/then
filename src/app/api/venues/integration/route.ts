@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { VenueAdapter } from '@/lib/venue-integration/VenueAdapter';
-import { VenueAPISimulator } from '@/lib/venue-simulator/VenueAPISimulator';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -83,6 +81,9 @@ async function handleListVenues(): Promise<NextResponse> {
       console.warn('Venues directory not found, using fallback list');
       venueDirectories = ['victoria-palace', 'lyric-theater'];
     }
+
+    // Import VenueAdapter only at runtime
+    const { VenueAdapter } = await import('@/lib/venue-integration/VenueAdapter');
     
     // Get detailed information for each venue
     const venues = [];
@@ -151,6 +152,10 @@ async function handleVenueStatus(venueSlug: string): Promise<NextResponse> {
   try {
     console.log(`📊 Getting detailed status for venue: ${venueSlug}`);
     
+    // Import classes only at runtime
+    const { VenueAdapter } = await import('@/lib/venue-integration/VenueAdapter');
+    const { VenueAPISimulator } = await import('@/lib/venue-simulator/VenueAPISimulator');
+    
     const adapter = new VenueAdapter(venueSlug);
     const simulator = new VenueAPISimulator(venueSlug, 'json_file');
     
@@ -218,6 +223,9 @@ async function handleVenueStatus(venueSlug: string): Promise<NextResponse> {
 async function handleSystemHealth(): Promise<NextResponse> {
   try {
     console.log('💊 Performing system-wide venue health check');
+    
+    // Import VenueAdapter only at runtime
+    const { VenueAdapter } = await import('@/lib/venue-integration/VenueAdapter');
     
     const venueList = await VenueAdapter.getAvailableVenues();
     const healthChecks = await Promise.allSettled(
@@ -322,6 +330,10 @@ async function handleTestConnection(venueSlug: string): Promise<NextResponse> {
   try {
     console.log(`🧪 Testing connection to venue: ${venueSlug}`);
     
+    // Import classes only at runtime
+    const { VenueAdapter } = await import('@/lib/venue-integration/VenueAdapter');
+    const { VenueAPISimulator } = await import('@/lib/venue-simulator/VenueAPISimulator');
+    
     const adapter = new VenueAdapter(venueSlug);
     const simulator = new VenueAPISimulator(venueSlug, 'json_file');
     
@@ -371,6 +383,9 @@ async function handleTestConnection(venueSlug: string): Promise<NextResponse> {
 async function handleSyncData(venueSlug: string, showId?: string): Promise<NextResponse> {
   try {
     console.log(`🔄 Syncing data for venue: ${venueSlug}, show: ${showId || 'all'}`);
+    
+    // Import VenueAdapter only at runtime
+    const { VenueAdapter } = await import('@/lib/venue-integration/VenueAdapter');
     
     const adapter = new VenueAdapter(venueSlug);
     await adapter.syncVenueData(showId);
