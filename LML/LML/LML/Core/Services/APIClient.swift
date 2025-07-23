@@ -35,15 +35,31 @@ class APIClient: APIClientProtocol {
     private init(environment: APIEnvironment = .production) {
         self.environment = environment
         
-        // 🚨 CRITICAL FAIL-SAFE: NEVER ALLOW LOCALHOST
+        // 🚨 ULTRA-AGGRESSIVE RAILWAY FORCING - NEVER ALLOW LOCALHOST
         let requestedURL = environment.baseURL
-        if requestedURL.absoluteString.contains("localhost") {
-            print("🚨🚨🚨 LOCALHOST BLOCKED! Forcing Railway backend!")
-            print("❌ Attempted URL: \(requestedURL.absoluteString)")
+        let requestedString = requestedURL.absoluteString
+        
+        print("🔍 ULTRA-AGGRESSIVE URL CHECK:")
+        print("   🎯 Requested URL: \(requestedString)")
+        print("   🔍 Environment: \(environment)")
+        print("   🏗️ Build Config: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")")
+        
+        // MULTIPLE LOCALHOST DETECTION METHODS
+        let isLocalhost = requestedString.contains("localhost") || 
+                         requestedString.contains("127.0.0.1") ||
+                         requestedString.contains("3001") ||
+                         requestedString.hasPrefix("http://")
+        
+        if isLocalhost {
+            print("🚨🚨🚨 LOCALHOST DETECTED AND BLOCKED!")
+            print("❌ Blocked URL: \(requestedString)")
+            print("🔒 FORCING RAILWAY CONNECTION...")
             self.baseURL = URL(string: "https://then-production.up.railway.app")!
-            print("✅ Forced URL: \(self.baseURL.absoluteString)")
+            print("✅ FORCED Railway URL: \(self.baseURL.absoluteString)")
+            print("🚫 Localhost connections are PERMANENTLY DISABLED")
         } else {
             self.baseURL = requestedURL
+            print("✅ Railway URL approved: \(self.baseURL.absoluteString)")
         }
         
         let configuration = URLSessionConfiguration.default
@@ -251,12 +267,26 @@ class APIClient: APIClientProtocol {
         
         let url = baseURL.appendingPathComponent("api").appendingPathComponent(endpoint)
         
-        // 🚨 CRITICAL LOGGING: Log every request URL to debug connectivity
-        print("🌐 APIClient REQUEST:")
+        // 🚨 ULTRA-AGGRESSIVE REQUEST VALIDATION
+        print("🌐 APIClient REQUEST VALIDATION:")
         print("   📍 Base URL: \(baseURL.absoluteString)")
         print("   🎯 Full URL: \(url.absoluteString)")
         print("   📡 Method: \(method.rawValue)")
         print("   🔧 Endpoint: \(endpoint)")
+        
+        // 🚨 FINAL LOCALHOST CHECK - BLOCK ANY LOCALHOST REQUESTS
+        if url.absoluteString.contains("localhost") || url.absoluteString.contains("127.0.0.1") || url.absoluteString.contains("3001") {
+            print("🚨🚨🚨 EMERGENCY LOCALHOST BLOCK!")
+            print("❌ BLOCKED REQUEST: \(url.absoluteString)")
+            throw APIError.networkError("Localhost connections are permanently disabled. Using Railway only.")
+        }
+        
+        // 🚨 ENSURE RAILWAY CONNECTION  
+        if !url.absoluteString.contains("railway.app") {
+            print("⚠️ WARNING: Non-Railway URL detected: \(url.absoluteString)")
+        } else {
+            print("✅ RAILWAY CONNECTION VERIFIED: \(url.absoluteString)")
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
@@ -390,13 +420,19 @@ enum APIEnvironment {
     case production
     
     var baseURL: URL {
+        // 🚨 ULTRA-AGGRESSIVE: ALL ENVIRONMENTS USE RAILWAY
+        let railwayURL = "https://then-production.up.railway.app"
+        
         switch self {
         case .development:
-            return URL(string: "https://then-production.up.railway.app")!  // 🚨 FORCE RAILWAY - NO LOCALHOST
+            print("🔒 DEVELOPMENT MODE: FORCED to Railway (NO localhost allowed)")
+            return URL(string: railwayURL)!
         case .staging:
-            return URL(string: "https://staging-api.lastminutelive.com")!
+            print("🔒 STAGING MODE: FORCED to Railway")  
+            return URL(string: railwayURL)!
         case .production:
-            return URL(string: "https://then-production.up.railway.app")!  // Railway production backend
+            print("🔒 PRODUCTION MODE: Using Railway")
+            return URL(string: railwayURL)!
         }
     }
 }
