@@ -54,34 +54,35 @@ export async function POST(request: NextRequest) {
     console.log('🎫 Creating seat reservations for show:', showId)
     console.log('🎯 Specific seat IDs to reserve:', specificSeatIds)
 
-    // 🔄 TEMPORARY DEVELOPMENT FIX - Get actual seat UUIDs for testing
-    // Instead of mapping hardcoded IDs, let's get real seat UUIDs from the database
+    // 🔄 Map hardcoded seat IDs to real database UUIDs
     let realSeatIds: string[];
     
-         if (process.env.NODE_ENV === 'development') {
-       console.log('🛠️ DEV MODE: Getting real seat UUIDs for testing...');
-       
-       // Get actual seats from the database for this show
-       const availableSeats = await db
-         .select({ id: seats.id })
-         .from(seats)
-         .where(eq(seats.showId, showId))
-         .limit(specificSeatIds.length);
-       
-       realSeatIds = availableSeats.map(seat => seat.id);
-       console.log(`✅ Using ${realSeatIds.length} real seat UUIDs for testing:`, realSeatIds.slice(0, 2));
-      
-    } else {
-      // Production: Use proper hardcoded seat mapping
+    console.log('🗺️ Converting hardcoded seat IDs to database UUIDs...')
+    
+    try {
+      // Always use the proper hardcoded seat mapping system
       realSeatIds = await convertHardcodedSeatIds(showId, specificSeatIds);
+      console.log(`✅ Mapped ${specificSeatIds.length} hardcoded IDs to ${realSeatIds.length} database UUIDs`)
       
       if (realSeatIds.length === 0) {
-        console.error('❌ No valid seat mappings found for provided seat IDs');
+        console.error('❌ No valid seat mappings found for Hamilton hardcoded IDs')
+        console.error('💡 Make sure hardcoded_seat_mappings table is populated for show:', showId)
         return NextResponse.json({ 
-          error: 'Invalid seat selection - seats not found',
-          details: 'The selected seats could not be mapped to valid database records'
-        }, { status: 400 });
+          error: 'Invalid seat selection',
+          details: 'The selected seats could not be mapped to valid database records. Please refresh and try again.'
+        }, { status: 400 })
       }
+      
+      if (realSeatIds.length !== specificSeatIds.length) {
+        console.warn(`⚠️ Mapping incomplete: ${specificSeatIds.length} requested → ${realSeatIds.length} mapped`)
+      }
+      
+    } catch (mappingError) {
+      console.error('❌ Seat mapping failed:', mappingError)
+      return NextResponse.json({ 
+        error: 'Seat mapping failed',
+        details: 'Unable to process seat selection. Please try again.'
+      }, { status: 500 })
     }
 
     if (realSeatIds.length === 0) {
