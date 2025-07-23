@@ -214,14 +214,14 @@ class APIClient: APIClientProtocol {
     func createPaymentIntent(showId: String, specificSeatIds: [String]) async throws -> PaymentIntentResponse {
         let body: [String: Any] = [
             "showId": showId,
-            "seatIds": specificSeatIds
+            "specificSeatIds": specificSeatIds
         ]
         
         return try await performRequest(
-            endpoint: "/payments/intent",
+            endpoint: "/payment-intent",
             method: .POST,
             body: body,
-            requiresAuth: true,
+            requiresAuth: false,
             responseType: PaymentIntentResponse.self
         )
     }
@@ -424,6 +424,12 @@ enum APIError: LocalizedError {
 struct PaymentIntentResponse: Codable {
     let paymentIntentId: String
     let clientSecret: String
+    let reservationId: String?
+    let amount: Int?
+    let currency: String?
+    let showTitle: String?
+    let seatCount: Int?
+    let expiresAt: String?
 }
 
 struct EmptyResponse: Codable {
