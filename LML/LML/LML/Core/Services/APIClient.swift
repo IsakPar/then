@@ -30,6 +30,7 @@ class APIClient: APIClientProtocol {
     private let session: URLSession
     private let baseURL: URL
     private let environment: APIEnvironment
+    private let jsonDecoder: JSONDecoder
     
     private init(environment: APIEnvironment = .development) {
         self.environment = environment
@@ -39,6 +40,10 @@ class APIClient: APIClientProtocol {
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: configuration)
+        
+        // Configure JSON decoder with proper date strategy for ISO 8601
+        self.jsonDecoder = JSONDecoder()
+        self.jsonDecoder.dateDecodingStrategy = .iso8601
     }
     
     // MARK: - Authentication Endpoints
@@ -261,7 +266,7 @@ class APIClient: APIClientProtocol {
                 return EmptyResponse() as! T
             }
             
-            return try JSONDecoder().decode(T.self, from: data)
+            return try jsonDecoder.decode(T.self, from: data)
             
         } catch let error as APIError {
             throw error

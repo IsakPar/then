@@ -1,0 +1,15 @@
+{
+  "user": {
+    "id": "guest_c9f7058c-d954-4741-b0c8-95da199850f9",
+    "email": "test@example.com",
+    "firstName": null,
+    "lastName": null,
+    "accountType": "guest",
+    "authProvider": "guest",
+    "isGuest": true,
+    "emailVerified": false,
+    "biometricEnabled": false,
+    "createdAt": "2025-07-23T10:56:42.092Z"
+  },
+  "sessionToken": "guest_session_31903d57-d1b6-4ad6-be51-4d8ef2ad22e6"
+}
