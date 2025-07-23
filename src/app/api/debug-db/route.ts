@@ -133,6 +133,38 @@ export async function POST(request: Request) {
       }
     }
     
+    // Check for cleanup reservations request
+    if (body.action === 'cleanup-reservations' && body.showId) {
+      console.log(`🧹 Cleaning expired reservations for show: ${body.showId}`);
+      
+      try {
+        const { reservations } = await import('@/lib/db/schema');
+        
+        // Delete reservations older than 15 minutes
+        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+        
+        const deletedReservations = await db.delete(reservations)
+          .where(
+            sql`${reservations.expiresAt} < ${fifteenMinutesAgo.toISOString()}`
+          );
+        
+        console.log(`✅ Cleaned expired reservations`);
+        
+        return NextResponse.json({
+          success: true,
+          message: `Cleaned expired reservations`,
+          cleanedAt: new Date().toISOString()
+        });
+        
+      } catch (error) {
+        console.error('❌ Cleanup error:', error);
+        return NextResponse.json({
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to cleanup reservations'
+        }, { status: 500 });
+      }
+    }
+    
     // Check for migration request
     if (body.action === 'create-auth-tables' && body.confirm === 'lastminutelive-auth-migration') {
       console.log('🚀 Creating auth tables...');
@@ -242,7 +274,7 @@ export async function POST(request: Request) {
       );
     }
     
-  } catch (error) {
+      } catch (error) {
     console.error('❌ Migration failed:', error);
     return NextResponse.json(
       { 
