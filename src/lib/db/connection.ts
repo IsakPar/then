@@ -5,24 +5,45 @@ import * as schema from './schema';
 // Database connection configuration
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/lastminutelive';
 
-// Create postgres client with connection pooling
-const client = postgres(connectionString, {
-  max: 5,
-  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
-  debug: process.env.NODE_ENV === 'development' ? false : false,
-});
+// Check if we're in a build environment (Railway build step)
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL;
 
-// Create Drizzle instance
-export const db = drizzle(client, { 
-  schema,
-  logger: process.env.NODE_ENV === 'development'
-});
+let client: postgres.Sql;
+let db: any;
 
-// Log connection configuration (without exposing credentials)
-console.log('🗄️  Database connection configured:');
-console.log(`   URL: ${connectionString.replace(/:[^:]*@/, ':***@')}`);
-console.log(`   Pool size: 5`);
-console.log(`   SSL: ${process.env.NODE_ENV === 'production' ? 'enabled' : 'disabled'}`);
-console.log(`   Debug SQL: ${process.env.NODE_ENV === 'development' ? 'false' : 'false'}`);
+if (isBuildTime) {
+  // During build time on Railway, create a dummy client to avoid connection errors
+  console.log('🔧 Build time detected - using dummy database client');
+  
+  // Create a minimal mock client for build time
+  client = {
+    execute: () => Promise.resolve([]),
+    query: () => Promise.resolve([]),
+    end: () => Promise.resolve(),
+  } as any;
+  
+  db = drizzle(client, { schema });
+} else {
+  // Normal runtime client with connection pooling
+  client = postgres(connectionString, {
+    max: 5,
+    ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    debug: process.env.NODE_ENV === 'development' ? false : false,
+  });
 
+  // Create Drizzle instance
+  db = drizzle(client, { 
+    schema,
+    logger: process.env.NODE_ENV === 'development'
+  });
+
+  // Log connection configuration (without exposing credentials)
+  console.log('🗄️  Database connection configured:');
+  console.log(`   URL: ${connectionString.replace(/:[^:]*@/, ':***@')}`);
+  console.log(`   Pool size: 5`);
+  console.log(`   SSL: ${process.env.NODE_ENV === 'production' ? 'enabled' : 'disabled'}`);
+  console.log(`   Debug SQL: ${process.env.NODE_ENV === 'development' ? 'false' : 'false'}`);
+}
+
+export { db };
 export default db; 
