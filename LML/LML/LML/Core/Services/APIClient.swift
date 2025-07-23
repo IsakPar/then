@@ -41,9 +41,18 @@ class APIClient: APIClientProtocol {
         configuration.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: configuration)
         
-        // Configure JSON decoder with proper date strategy for ISO 8601
+        // Configure JSON decoder with proper date strategy for ISO 8601 with milliseconds
         self.jsonDecoder = JSONDecoder()
-        self.jsonDecoder.dateDecodingStrategy = .iso8601
+        
+        // Create custom date formatter that handles milliseconds
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        
+        self.jsonDecoder.dateDecodingStrategy = .formatted(dateFormatter)
+        
+        print("🔍 APIClient: Configured JSON decoder with custom date format for milliseconds")
     }
     
     // MARK: - Authentication Endpoints
@@ -266,11 +275,57 @@ class APIClient: APIClientProtocol {
                 return EmptyResponse() as! T
             }
             
-            return try jsonDecoder.decode(T.self, from: data)
+            // 🔍 ENHANCED LOGGING: Log raw response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🔍 RAW API Response Data:")
+                print("📄 Response String: \(responseString)")
+                print("📊 Data Length: \(data.count) bytes")
+                print("🎯 Attempting to decode to type: \(T.self)")
+            } else {
+                print("❌ Failed to convert response data to UTF-8 string")
+                print("📊 Raw Data Length: \(data.count) bytes")
+            }
+            
+            do {
+                let decodedResponse = try jsonDecoder.decode(T.self, from: data)
+                print("✅ Successfully decoded response to \(T.self)")
+                return decodedResponse
+            } catch let DecodingError.keyNotFound(key, context) {
+                print("🚨 JSON DECODING ERROR - Missing Key:")
+                print("   Missing Key: \(key)")
+                print("   Coding Path: \(context.codingPath)")
+                print("   Context: \(context.debugDescription)")
+                throw APIError.networkError("Missing required key '\(key)' in response")
+            } catch let DecodingError.typeMismatch(type, context) {
+                print("🚨 JSON DECODING ERROR - Type Mismatch:")
+                print("   Expected Type: \(type)")
+                print("   Coding Path: \(context.codingPath)")
+                print("   Context: \(context.debugDescription)")
+                throw APIError.networkError("Type mismatch for '\(context.codingPath)' - expected \(type)")
+            } catch let DecodingError.valueNotFound(type, context) {
+                print("🚨 JSON DECODING ERROR - Value Not Found:")
+                print("   Missing Type: \(type)")
+                print("   Coding Path: \(context.codingPath)")
+                print("   Context: \(context.debugDescription)")
+                throw APIError.networkError("Missing value for '\(context.codingPath)' of type \(type)")
+            } catch let DecodingError.dataCorrupted(context) {
+                print("🚨 JSON DECODING ERROR - Data Corrupted:")
+                print("   Coding Path: \(context.codingPath)")
+                print("   Context: \(context.debugDescription)")
+                throw APIError.networkError("Corrupted data at '\(context.codingPath)'")
+            } catch {
+                print("🚨 JSON DECODING ERROR - Unknown:")
+                print("   Error: \(error)")
+                print("   Error Type: \(type(of: error))")
+                throw APIError.networkError("JSON decoding failed: \(error.localizedDescription)")
+            }
             
         } catch let error as APIError {
             throw error
         } catch {
+            print("🚨 NETWORK ERROR:")
+            print("   Error: \(error)")
+            print("   Error Type: \(type(of: error))")
             throw APIError.networkError(error.localizedDescription)
         }
     }

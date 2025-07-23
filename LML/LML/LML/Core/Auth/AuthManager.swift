@@ -134,9 +134,19 @@ class AuthManager: ObservableObject {
         defer { isLoading = false }
         
         print("🎭 Creating guest session via API for: \(email)")
+        print("🔍 AuthManager: Starting guest session creation process")
         
         do {
+            print("🔍 AuthManager: Calling authService.createGuestSession")
             let response = try await authService.createGuestSession(email: email)
+            
+            print("🔍 AuthManager: Received response from API")
+            print("🔍 Response user ID: \(response.user.id)")
+            print("🔍 Response user email: \(response.user.email)")
+            print("🔍 Response accountType: \(response.user.accountType)")
+            print("🔍 Response authProvider: \(response.user.authProvider)")
+            print("🔍 Response isGuest: \(response.user.isGuest)")
+            print("🔍 Response sessionToken: \(response.sessionToken.prefix(20))...")
             
             let user = User(
                 id: response.user.id,
@@ -151,6 +161,10 @@ class AuthManager: ObservableObject {
                 createdAt: Date()
             )
             
+            print("🔍 AuthManager: Created user object successfully")
+            print("🔍 User accountType: \(user.accountType)")
+            print("🔍 User authProvider: \(user.authProvider)")
+            
             keychainService.storeAuthToken(response.sessionToken)
             authState = .guest(user)
             
@@ -159,6 +173,8 @@ class AuthManager: ObservableObject {
             
         } catch {
             print("❌ Guest session API call failed: \(error)")
+            print("❌ Error type: \(type(of: error))")
+            print("❌ Error description: \(error.localizedDescription)")
             throw error
         }
     }

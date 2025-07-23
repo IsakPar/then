@@ -79,6 +79,7 @@ class AuthenticationService: AuthenticationServiceProtocol {
     
     func createGuestSession(email: String) async throws -> GuestResponse {
         print("🎭 Creating guest session for: \(email)")
+        print("🔍 AuthService: Starting guest session creation")
         
         do {
             let deviceInfo = [
@@ -87,13 +88,26 @@ class AuthenticationService: AuthenticationServiceProtocol {
                 "device": await UIDevice.current.model
             ]
             
+            print("🔍 AuthService: Device info prepared: \(deviceInfo)")
+            print("🔍 AuthService: Calling apiClient.createGuestSession")
+            
             let response = try await apiClient.createGuestSession(email: email, deviceInfo: deviceInfo)
             
             print("✅ Guest session created successfully")
+            print("🔍 AuthService: Response received from APIClient")
+            print("🔍 Response type: \(type(of: response))")
+            
             return response
             
         } catch {
             print("❌ Guest session creation failed: \(error)")
+            print("❌ AuthService error type: \(type(of: error))")
+            print("❌ AuthService error description: \(error.localizedDescription)")
+            
+            if let apiError = error as? APIError {
+                print("❌ API Error details: \(apiError)")
+            }
+            
             throw AuthError.unknown(error.localizedDescription)
         }
     }
