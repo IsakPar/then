@@ -3,11 +3,41 @@ import { randomUUID } from 'crypto';
 import { db } from '@/lib/db/connection';
 import { guestSessions } from '@/lib/db/schema';
 
+// Add response validation function
+const validateResponse = (response: any) => {
+  const requiredFields = [
+    'user.id', 'user.email', 'user.accountType', 'user.authProvider',
+    'user.isGuest', 'user.emailVerified', 'user.biometricEnabled', 
+    'user.createdAt', 'sessionToken'
+  ];
+  
+  for (const field of requiredFields) {
+    const fieldPath = field.split('.');
+    let value = response;
+    
+    for (const key of fieldPath) {
+      if (value === null || value === undefined || !(key in value)) {
+        throw new Error(`Missing required field: ${field}`);
+      }
+      value = value[key];
+    }
+    
+    // Check for null/undefined values (but allow false, 0, empty string)
+    if (value === null || value === undefined) {
+      throw new Error(`Missing required field: ${field}`);
+    }
+  }
+  
+  return response;
+};
+
 export async function POST(request: NextRequest) {
+  let body: any;
+  
   try {
     console.log('🎭 Guest session creation endpoint hit');
     
-    const body = await request.json();
+    body = await request.json();
     const { email, deviceInfo } = body;
 
     // Validate required fields
@@ -48,42 +78,46 @@ export async function POST(request: NextRequest) {
 
     console.log(`💾 Guest session saved to database with ID: ${savedGuestSession.id}`);
 
-    // Create guest user object
-    const guestUser = {
-      id: guestUserId,
-      email: email,
-      firstName: null,
-      lastName: null,
-      accountType: 'guest',
-      authProvider: 'guest',
-      isGuest: true,
-      emailVerified: false,
-      biometricEnabled: false,
-      createdAt: savedGuestSession.createdAt.toISOString()
-    };
-
-    // Response matching iOS app's GuestResponse model
+    // Create complete response with all required fields for iOS app
     const response = {
       user: {
-        id: guestUser.id,
-        email: guestUser.email,
-        firstName: guestUser.firstName,
-        lastName: guestUser.lastName,
-        accountType: guestUser.accountType,
-        isGuest: guestUser.isGuest
+        id: guestUserId,
+        email: email,
+        firstName: null,
+        lastName: null,
+        accountType: "guest", // Must match iOS enum exactly
+        authProvider: "guest", // Required field - was missing
+        isGuest: true,
+        emailVerified: false, // Required field - was missing
+        biometricEnabled: false, // Required field - was missing
+        createdAt: savedGuestSession.createdAt.toISOString() // Required field - was missing
       },
       sessionToken: sessionToken
     };
 
+    // Validate response before returning
+    const validatedResponse = validateResponse(response);
+
     console.log(`✅ Guest session created successfully for: ${email}`);
     console.log(`🔑 Session Token: ${sessionToken.substring(0, 20)}...`);
 
-    return NextResponse.json(response, { status: 200 });
+    return NextResponse.json(validatedResponse, { status: 200 });
 
   } catch (error) {
-    console.error('❌ Guest session creation error:', error);
+    // Enhanced error logging
+    console.error('❌ Guest session creation error:', {
+      error: error.message,
+      stack: error.stack,
+      requestBody: body || 'Failed to parse request body',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return structured error response
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

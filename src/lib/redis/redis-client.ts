@@ -34,6 +34,29 @@ class RedisClientManager {
   }
 
   private getConfig(): RedisConfig {
+    // Railway provides REDIS_URL, fallback to individual components
+    const redisUrl = process.env.REDIS_URL;
+    
+    if (redisUrl) {
+      try {
+        // Parse REDIS_URL format: redis://username:password@host:port/db
+        const url = new URL(redisUrl);
+        return {
+          host: url.hostname,
+          port: parseInt(url.port) || 6379,
+          password: url.password || undefined,
+          db: parseInt(url.pathname.slice(1)) || 0,
+          retryDelayOnFailover: 100,
+          maxRetriesPerRequest: 3,
+          enableOfflineQueue: false
+        };
+      } catch (error) {
+        console.error('Failed to parse REDIS_URL:', redisUrl, error);
+        // Fall through to individual environment variables
+      }
+    }
+    
+    // Fallback to individual environment variables
     return {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
