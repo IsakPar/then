@@ -34,7 +34,17 @@ class APIClient: APIClientProtocol {
     
     private init(environment: APIEnvironment = .production) {
         self.environment = environment
-        self.baseURL = environment.baseURL
+        
+        // 🚨 CRITICAL FAIL-SAFE: NEVER ALLOW LOCALHOST
+        let requestedURL = environment.baseURL
+        if requestedURL.absoluteString.contains("localhost") {
+            print("🚨🚨🚨 LOCALHOST BLOCKED! Forcing Railway backend!")
+            print("❌ Attempted URL: \(requestedURL.absoluteString)")
+            self.baseURL = URL(string: "https://then-production.up.railway.app")!
+            print("✅ Forced URL: \(self.baseURL.absoluteString)")
+        } else {
+            self.baseURL = requestedURL
+        }
         
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30
@@ -240,6 +250,14 @@ class APIClient: APIClientProtocol {
     ) async throws -> T {
         
         let url = baseURL.appendingPathComponent("api").appendingPathComponent(endpoint)
+        
+        // 🚨 CRITICAL LOGGING: Log every request URL to debug connectivity
+        print("🌐 APIClient REQUEST:")
+        print("   📍 Base URL: \(baseURL.absoluteString)")
+        print("   🎯 Full URL: \(url.absoluteString)")
+        print("   📡 Method: \(method.rawValue)")
+        print("   🔧 Endpoint: \(endpoint)")
+        
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -374,7 +392,7 @@ enum APIEnvironment {
     var baseURL: URL {
         switch self {
         case .development:
-            return URL(string: "http://localhost:3001")!  // Local Next.js development server
+            return URL(string: "https://then-production.up.railway.app")!  // 🚨 FORCE RAILWAY - NO LOCALHOST
         case .staging:
             return URL(string: "https://staging-api.lastminutelive.com")!
         case .production:

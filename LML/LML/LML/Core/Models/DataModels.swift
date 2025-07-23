@@ -206,11 +206,15 @@ class AppConfiguration {
     private init() {}
     
     var apiEnvironment: APIEnvironment {
-        #if DEBUG
-        return .development
-        #else
-        return .production
-        #endif
+        // 🚨 FORCE RAILWAY CONNECTION - ALWAYS USE PRODUCTION
+        return .production  // Force Railway backend in all modes
+        
+        // Original logic (disabled):
+        // #if DEBUG
+        // return .development
+        // #else
+        // return .production
+        // #endif
     }
     
     var isProductionBuild: Bool {
