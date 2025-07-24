@@ -320,8 +320,6 @@ class SeatMapViewModel: ObservableObject {
                 }
             }
         }
-        
-        showingGuestEmailModal = false
     }
     
     // MARK: - Seat Map Loading

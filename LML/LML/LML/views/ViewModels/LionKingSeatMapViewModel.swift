@@ -326,7 +326,6 @@ class LionKingSeatMapViewModel: ObservableObject {
         // This method is no longer used in the new flow
         // Keeping for compatibility but it shouldn't be called
         print("⚠️ Lion King: handleGuestEmailSubmitted called - this shouldn't happen in the new flow")
-        showingGuestEmailModal = false
         processPayment()
     }
     
