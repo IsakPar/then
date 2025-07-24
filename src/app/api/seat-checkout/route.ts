@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createReservations, getShowWithPricing, convertHardcodedSeatIds } from '@/lib/db/queries'
+import crypto from 'crypto'
+import { createReservations, getShowWithPricing, convertHardcodedSeatIds, autoCreateMissingSeatMappings } from '@/lib/db/queries'
 import Stripe from 'stripe'
 import { db } from '@/lib/db/connection'
 import { shows, seats, seatMaps } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 // Force dynamic rendering to prevent build-time errors
 export const dynamic = 'force-dynamic';
@@ -64,12 +65,37 @@ export async function POST(request: NextRequest) {
       realSeatIds = await convertHardcodedSeatIds(showId, specificSeatIds);
       console.log(`✅ Mapped ${specificSeatIds.length} hardcoded IDs to ${realSeatIds.length} database UUIDs`)
       
+      // 🔧 AUTO-FIX: If no mappings found, try to create them automatically
+      if (realSeatIds.length === 0) {
+        console.warn('⚠️ No seat mappings found - attempting auto-fix...')
+        
+        try {
+          const createdMappings = await autoCreateMissingSeatMappings(showId, specificSeatIds)
+          
+          if (createdMappings > 0) {
+            console.log(`🔧 Auto-created ${createdMappings} seat mappings`)
+            
+            // Retry the conversion after creating mappings
+            realSeatIds = await convertHardcodedSeatIds(showId, specificSeatIds)
+            console.log(`✅ After auto-fix: Mapped ${specificSeatIds.length} hardcoded IDs to ${realSeatIds.length} database UUIDs`)
+            
+            if (realSeatIds.length > 0) {
+              console.log('🎉 Auto-fix successful! Proceeding with checkout...')
+            }
+          } else {
+            console.error('❌ Auto-fix failed to create any mappings')
+          }
+        } catch (autoFixError) {
+          console.error('❌ Auto-fix failed:', autoFixError)
+        }
+      }
+      
       if (realSeatIds.length === 0) {
         console.error('❌ No valid seat mappings found for Hamilton hardcoded IDs')
         console.error('💡 Make sure hardcoded_seat_mappings table is populated for show:', showId)
         return NextResponse.json({ 
           error: 'Invalid seat selection',
-          details: 'The selected seats could not be mapped to valid database records. Please refresh and try again.'
+          details: 'The selected seats could not be mapped to valid database records. Auto-fix attempted but failed. Please refresh and try again.'
         }, { status: 400 })
       }
       

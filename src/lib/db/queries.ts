@@ -415,6 +415,145 @@ export async function convertHardcodedSeatIds(
   return realSeatIds;
 }
 
+/**
+ * Auto-create missing seat mappings for a show when hardcoded IDs can't be resolved
+ * This function serves as a safety net to ensure iOS app always works
+ */
+export async function autoCreateMissingSeatMappings(
+  showIdOrSlug: string,
+  hardcodedSeatIds: string[]
+): Promise<number> {
+  console.log('🔧 Auto-creating missing seat mappings...');
+  
+  // Convert show slug to UUID if needed
+  let showUUID: string;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(showIdOrSlug)) {
+    showUUID = showIdOrSlug;
+  } else {
+    const foundUUID = await getShowUUIDBySlug(showIdOrSlug);
+    if (!foundUUID) {
+      console.error(`❌ Could not find show UUID for slug: ${showIdOrSlug}`);
+      return 0;
+    }
+    showUUID = foundUUID;
+  }
+
+  // Get all available seats for this show
+  const availableSeats = await db
+    .select({
+      seatId: seats.id,
+      sectionName: sections.name,
+      sectionDisplayName: sections.displayName,
+      rowLetter: seats.rowLetter,
+      seatNumber: seats.seatNumber,
+    })
+    .from(seats)
+    .innerJoin(sections, eq(seats.sectionId, sections.id))
+    .where(eq(seats.showId, showUUID))
+    .orderBy(seats.rowLetter, seats.seatNumber);
+
+  if (availableSeats.length === 0) {
+    console.error('❌ No seats found for show');
+    return 0;
+  }
+
+  console.log(`📊 Found ${availableSeats.length} seats available for mapping`);
+
+  // Get already mapped seat IDs to avoid duplicates
+  const existingMappings = await db
+    .select({ realSeatId: hardcodedSeatMappings.realSeatId })
+    .from(hardcodedSeatMappings)
+    .where(eq(hardcodedSeatMappings.showId, showUUID));
+
+  const mappedSeatIds = new Set(existingMappings.map(m => m.realSeatId));
+  const unmappedSeats = availableSeats.filter(seat => !mappedSeatIds.has(seat.seatId));
+
+  console.log(`🎯 ${unmappedSeats.length} seats available for new mappings`);
+
+  // Helper function to get seats for a section type
+  const getSeatsForSection = (sectionNames: string[], count: number) => {
+    const sectionSeats = unmappedSeats.filter(seat => 
+      sectionNames.some(name => 
+        seat.sectionName.toLowerCase().includes(name.toLowerCase()) ||
+        seat.sectionDisplayName?.toLowerCase().includes(name.toLowerCase())
+      )
+    );
+    return sectionSeats.slice(0, count);
+  };
+
+  const mappingsToCreate: Array<{showId: string, hardcodedSeatId: string, realSeatId: string}> = [];
+  
+  // Smart mapping strategy based on iOS hardcoded ID patterns
+  for (const hardcodedId of hardcodedSeatIds) {
+    // Skip if mapping already exists
+    const existingMapping = await db
+      .select()
+      .from(hardcodedSeatMappings)
+      .where(
+        and(
+          eq(hardcodedSeatMappings.showId, showUUID),
+          eq(hardcodedSeatMappings.hardcodedSeatId, hardcodedId)
+        )
+      )
+      .limit(1);
+
+    if (existingMapping.length > 0) {
+      continue; // Skip already mapped seats
+    }
+
+    // Determine section type from hardcoded ID
+    let sectionSeats: any[] = [];
+    
+    if (hardcodedId.startsWith('premium-')) {
+      sectionSeats = getSeatsForSection(['premium', 'orchestra', 'stalls'], 1);
+    } else if (hardcodedId.startsWith('middle-')) {
+      sectionSeats = getSeatsForSection(['mezzanine', 'dress', 'circle', 'middle'], 1);
+    } else if (hardcodedId.startsWith('back-')) {
+      sectionSeats = getSeatsForSection(['grand', 'upper', 'balcony'], 1);
+    } else if (hardcodedId.startsWith('sideA-')) {
+      sectionSeats = getSeatsForSection(['left', 'side', 'box'], 1);
+    } else if (hardcodedId.startsWith('sideB-')) {
+      sectionSeats = getSeatsForSection(['right', 'side', 'box'], 1);
+    } else {
+      // Fallback: use any available seat
+      sectionSeats = unmappedSeats.slice(0, 1);
+    }
+
+    if (sectionSeats.length > 0) {
+      const seat = sectionSeats[0];
+      mappingsToCreate.push({
+        showId: showUUID,
+        hardcodedSeatId: hardcodedId,
+        realSeatId: seat.seatId
+      });
+      
+      // Remove from available seats to avoid duplicate mapping
+      const seatIndex = unmappedSeats.findIndex(s => s.seatId === seat.seatId);
+      if (seatIndex !== -1) {
+        unmappedSeats.splice(seatIndex, 1);
+      }
+    }
+  }
+
+  if (mappingsToCreate.length === 0) {
+    console.log('ℹ️ No new mappings needed');
+    return 0;
+  }
+
+  // Insert new mappings
+  console.log(`💾 Creating ${mappingsToCreate.length} new seat mappings...`);
+  
+  try {
+    await db.insert(hardcodedSeatMappings).values(mappingsToCreate);
+    console.log(`✅ Successfully created ${mappingsToCreate.length} new seat mappings`);
+    return mappingsToCreate.length;
+  } catch (error) {
+    console.error('❌ Failed to create seat mappings:', error);
+    return 0;
+  }
+}
+
 // ============================================================================
 // RESERVATION QUERIES
 // ============================================================================

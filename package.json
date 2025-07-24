@@ -37,6 +37,7 @@
 		"next": "^15.0.0",
 		"next-auth": "^4.24.11",
 		"node-mailjet": "^6.0.8",
+		"pg": "^8.16.3",
 		"pixi-viewport": "^6.0.3",
 		"pixi.js": "^8.11.0",
 		"postcss": "^8.4.0",
