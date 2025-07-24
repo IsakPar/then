@@ -431,8 +431,53 @@ export async function createReservations(
   const expiresAt = new Date(Date.now() + expirationMinutes * 60 * 1000);
   
   return await db.transaction(async (tx) => {
-    // Update seats to reserved status
-    await tx
+    // 🔍 Check for existing reservations first
+    const existingReservations = await tx
+      .select({ seatId: reservations.seatId })
+      .from(reservations)
+      .where(inArray(reservations.seatId, seatIds));
+
+    if (existingReservations.length > 0) {
+      const conflictSeatIds = existingReservations.map(r => r.seatId);
+      console.log('❌ Reservation conflict detected for seats:', conflictSeatIds);
+      
+      // Clean up expired reservations for these specific seats
+      const now = new Date();
+      const expiredForTheseSeats = await tx
+        .delete(reservations)
+        .where(
+          and(
+            inArray(reservations.seatId, conflictSeatIds),
+            lt(reservations.expiresAt, now)
+          )
+        )
+        .returning();
+
+      if (expiredForTheseSeats.length > 0) {
+        console.log(`🧹 Cleaned up ${expiredForTheseSeats.length} expired reservations`);
+        
+        // Update seats back to available
+        const expiredSeatIds = expiredForTheseSeats.map(r => r.seatId);
+        await tx
+          .update(seats)
+          .set({ status: 'available' })
+          .where(inArray(seats.id, expiredSeatIds));
+      }
+
+      // Check again for still-active reservations
+      const stillReserved = await tx
+        .select({ seatId: reservations.seatId })
+        .from(reservations)
+        .where(inArray(reservations.seatId, seatIds));
+
+      if (stillReserved.length > 0) {
+        const unavailableSeats = stillReserved.map(r => r.seatId);
+        throw new Error(`Seats still reserved by another user: ${unavailableSeats.join(', ')}`);
+      }
+    }
+
+    // Update seats to reserved status (only available ones)
+    const updatedSeats = await tx
       .update(seats)
       .set({ status: 'reserved' })
       .where(
@@ -440,7 +485,14 @@ export async function createReservations(
           inArray(seats.id, seatIds),
           eq(seats.status, 'available')
         )
-      );
+      )
+      .returning();
+
+    if (updatedSeats.length !== seatIds.length) {
+      const updatedSeatIds = updatedSeats.map(s => s.id);
+      const unavailableSeats = seatIds.filter(id => !updatedSeatIds.includes(id));
+      throw new Error(`Some seats are no longer available: ${unavailableSeats.join(', ')}`);
+    }
 
     // Create reservations
     const reservationData: NewReservation[] = seatIds.map(seatId => ({

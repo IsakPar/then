@@ -87,6 +87,16 @@ export async function POST(request: NextRequest) {
     // Generate session token for this reservation
     const sessionToken = crypto.randomUUID()
 
+    // 🧹 CRITICAL: Clean up expired reservations before creating new ones
+    try {
+      console.log('🧹 Cleaning up expired reservations...')
+      const { cleanupExpiredReservations } = await import('@/lib/db/queries')
+      const cleanupResult = await cleanupExpiredReservations()
+      console.log(`✅ Cleaned up ${cleanupResult.cleaned} expired reservations`)
+    } catch (cleanupError) {
+      console.warn('⚠️ Cleanup failed (non-critical):', cleanupError)
+    }
+
     // Reserve the specific seats
     const reservationResult = await createReservations(
       realSeatIds,
