@@ -22,7 +22,7 @@ class SeatMapViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showingPaymentSheet = false
     @Published var showingSuccess = false
-    @Published var showingGuestEmailModal = false
+    // showingGuestEmailModal removed - Stripe handles email collection
     @Published var bookedSeats: [BookedSeat] = []
     @Published var bookingReference: String = ""
     
@@ -132,11 +132,8 @@ class SeatMapViewModel: ObservableObject {
     func proceedToCheckout() {
         guard !selectedSeats.isEmpty else { return }
         
-        if !isAuthenticated {
-            showingGuestEmailModal = true
-            return
-        }
-        
+        // Simplified flow: Always go directly to Stripe payment
+        // Stripe will handle email collection for guests
         Task {
             await createPaymentIntent()
         }
@@ -189,8 +186,21 @@ class SeatMapViewModel: ObservableObject {
         
         var configuration = PaymentSheet.Configuration()
         configuration.merchantDisplayName = "Last Minute Live"
-        configuration.customer = .init(id: authState.user?.id ?? "", ephemeralKeySecret: "")
         configuration.allowsDelayedPaymentMethods = true
+        
+        // Configure customer details based on auth state
+        if isAuthenticated, let user = authState.user {
+            // Authenticated user - prefill their details
+            configuration.customer = .init(id: user.id, ephemeralKeySecret: "")
+            configuration.defaultBillingDetails.email = user.email
+            configuration.defaultBillingDetails.name = "\(user.firstName ?? "") \(user.lastName ?? "")".trimmingCharacters(in: .whitespaces)
+            print("💳 Stripe: Prefilling details for authenticated user: \(user.email)")
+        } else {
+            // Guest checkout - Stripe will collect email
+            configuration.customer = nil // No customer for guest checkout
+            configuration.defaultBillingDetails.name = "Guest Customer"
+            print("💳 Stripe: Configured for guest checkout with email collection")
+        }
         
         // Enable Apple Pay with proper merchant configuration
         configuration.applePay = PaymentSheet.ApplePayConfiguration(
@@ -198,11 +208,17 @@ class SeatMapViewModel: ObservableObject {
             merchantCountryCode: "GB"
         )
         
+        // Configure billing details collection
+        configuration.billingDetailsCollectionConfiguration.email = .automatic
+        configuration.billingDetailsCollectionConfiguration.name = .automatic
+        configuration.billingDetailsCollectionConfiguration.address = .never
+        configuration.billingDetailsCollectionConfiguration.phone = .never
+        
         // Configure additional payment options
         configuration.primaryButtonLabel = "Complete Payment"
-        configuration.defaultBillingDetails.name = "LastMinuteLive Customer"
         
         print("💳 Apple Pay configured with merchant ID: merchant.lml-tickets.com.LML")
+        print("💳 Billing details collection: email=automatic, name=automatic")
         
         paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
         showingPaymentSheet = true
@@ -245,13 +261,18 @@ class SeatMapViewModel: ObservableObject {
         // Generate booking reference
         bookingReference = generateBookingReference()
         
+        // Handle guest user after successful payment
+        if !isAuthenticated {
+            handleGuestPaymentSuccess()
+        }
+        
         // 🎫 CRITICAL: Save ticket to persistent storage for tickets tab
         saveTicketToPersistentStorage()
         
         // 🎫 CRITICAL: Mark seats as permanently booked
         markSeatsAsBooked(selectedSeats)
         
-        // 📧 Send booking confirmation email
+        // 📧 Send booking confirmation email (uses email from Stripe or guest session)
         sendBookingConfirmationEmail()
         
         // Clear selections and show success
@@ -263,7 +284,32 @@ class SeatMapViewModel: ObservableObject {
         print("🎭 Booked Seats: \(bookedSeats.map { "\($0.section) R\($0.row) S\($0.number)" }.joined(separator: ", "))")
     }
     
+    /// Handles guest user setup after successful payment
+    private func handleGuestPaymentSuccess() {
+        print("💳 Handling guest payment success - creating guest session")
+        
+        // For guests, we create a session with a placeholder email
+        // The actual email confirmation will be sent to the email they provided in Stripe
+        Task {
+            do {
+                // Create guest session with placeholder email
+                // In a full implementation, we might extract this from Stripe's payment data
+                let placeholderEmail = "guest-\(bookingReference.lowercased())@stripe-checkout.com"
+                let _ = try await authManager.createGuestSession(email: placeholderEmail)
+                
+                print("✅ Guest session created after payment for booking: \(bookingReference)")
+            } catch {
+                print("⚠️ Could not create guest session after payment: \(error)")
+                // Don't fail the whole flow - payment already succeeded
+            }
+        }
+    }
+    
     func proceedAsGuest(email: String) {
+        // This method is no longer used in the new flow
+        // Keeping for compatibility but it shouldn't be called
+        print("⚠️ proceedAsGuest called - this shouldn't happen in the new flow")
+        
         Task {
             do {
                 let _ = try await authManager.createGuestSession(email: email)

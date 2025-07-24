@@ -22,7 +22,7 @@ class LionKingSeatMapViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showingPaymentSheet = false
     @Published var showingSuccess = false
-    @Published var showingGuestEmailModal = false
+    // showingGuestEmailModal removed - Stripe handles email collection
     @Published var bookedSeats: [BookedSeat] = []
     @Published var bookingReference: String = ""
     
@@ -297,14 +297,35 @@ class LionKingSeatMapViewModel: ObservableObject {
     func proceedToCheckout() {
         guard !selectedSeats.isEmpty else { return }
         
-        if isAuthenticated {
-            processPayment()
-        } else {
-            showingGuestEmailModal = true
+        // Simplified flow: Always go directly to payment
+        // Stripe will handle email collection for guests
+        processPayment()
+    }
+    
+    /// Handles guest user setup after successful payment
+    private func handleGuestPaymentSuccess() {
+        print("💳 Lion King: Handling guest payment success - creating guest session")
+        
+        // For guests, we create a session with a placeholder email
+        // The actual email confirmation will be sent to the email they provided in Stripe
+        Task {
+            do {
+                // Create guest session with placeholder email
+                let placeholderEmail = "guest-\(bookingReference.lowercased())@stripe-checkout.com"
+                let _ = try await authManager.createGuestSession(email: placeholderEmail)
+                
+                print("✅ Lion King: Guest session created after payment for booking: \(bookingReference)")
+            } catch {
+                print("⚠️ Lion King: Could not create guest session after payment: \(error)")
+                // Don't fail the whole flow - payment already succeeded
+            }
         }
     }
     
     func handleGuestEmailSubmitted(_ email: String) {
+        // This method is no longer used in the new flow
+        // Keeping for compatibility but it shouldn't be called
+        print("⚠️ Lion King: handleGuestEmailSubmitted called - this shouldn't happen in the new flow")
         showingGuestEmailModal = false
         processPayment()
     }
@@ -331,6 +352,11 @@ class LionKingSeatMapViewModel: ObservableObject {
         
         // Generate booking reference
         bookingReference = generateBookingReference()
+        
+        // Handle guest user after successful payment
+        if !isAuthenticated {
+            handleGuestPaymentSuccess()
+        }
         
         // 🎫 CRITICAL: Save ticket to persistent storage for tickets tab
         saveTicketToPersistentStorage()

@@ -66,12 +66,7 @@ struct LionKingSeatMapView: View {
                 bookingReference: viewModel.bookingReference
             )
         }
-        .sheet(isPresented: $viewModel.showingGuestEmailModal) {
-            GuestEmailModal(
-                isPresented: $viewModel.showingGuestEmailModal,
-                onEmailSubmitted: viewModel.handleGuestEmailSubmitted
-            )
-        }
+        // Email modal removed - Stripe now handles email collection natively
     }
     
     // MARK: - UI Components
