@@ -138,7 +138,7 @@ struct TicketsView: View {
                     title: "Unlock with Biometric",
                     icon: "faceid",
                     style: .primary,
-                    action: { viewModel?.authenticateWithBiometric() }
+                    action: { viewModel.authenticateWithBiometric() }
                 )
                 .padding(.horizontal, 24)
             }
@@ -147,24 +147,24 @@ struct TicketsView: View {
     
     private func authenticatedContent(user: User) -> some View {
         VStack(spacing: 24) {
-            TicketsHeader(user: user, ticketStats: viewModel?.ticketStats ?? TicketStats(tickets: []))
+            TicketsHeader(user: user, ticketStats: viewModel.ticketStats)
             
-            if viewModel?.hasTickets ?? false {
+            if viewModel.hasTickets {
                 ticketsListSection
-            } else if !(viewModel?.isLoading ?? true) {
-                EmptyTicketsState(user: user, onBrowseShows: { viewModel?.browseShows() })
+            } else if !viewModel.isLoading {
+                EmptyTicketsState(user: user, onBrowseShows: { viewModel.browseShows() })
             }
         }
         .refreshable {
-            await viewModel?.refreshTickets()
+            await viewModel.refreshTickets()
         }
     }
     
     private var ticketsListSection: some View {
         LazyVStack(spacing: 12) {
-            ForEach(viewModel?.sortedTickets ?? []) { ticket in
+            ForEach(viewModel.sortedTickets) { ticket in
                 TicketCard(ticket: ticket) {
-                    viewModel?.selectTicket(ticket)
+                    viewModel.selectTicket(ticket)
                 }
             }
         }
