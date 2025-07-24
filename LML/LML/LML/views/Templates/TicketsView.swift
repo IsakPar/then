@@ -11,7 +11,7 @@ import SwiftUI
 // MARK: - Tickets View Template
 struct TicketsView: View {
     @EnvironmentObject var authManager: AuthManager
-    @State private var viewModel: TicketsViewModel?
+    @StateObject private var viewModel: TicketsViewModel = TicketsViewModel(authManager: AuthManager.shared)
     
     var body: some View {
         NavigationView {
@@ -30,37 +30,24 @@ struct TicketsView: View {
             .foregroundColor(.white)
         }
         .onAppear {
-            // Initialize viewModel with environment object if not already done
-            if viewModel == nil {
-                viewModel = TicketsViewModel(authManager: authManager)
-                print("🔍 TicketsView: Created viewModel with authManager, current state: \(authManager.authState)")
-            }
+            print("🔍 TicketsView: Appeared with authManager, current state: \(authManager.authState)")
         }
-        .sheet(isPresented: Binding(
-            get: { viewModel?.showingSignIn ?? false },
-            set: { if !$0 { viewModel?.showingSignIn = false } }
-        )) {
+        .sheet(isPresented: $viewModel.showingSignIn) {
             SignInView()
         }
-        .sheet(isPresented: Binding(
-            get: { viewModel?.showingSignUp ?? false },
-            set: { if !$0 { viewModel?.showingSignUp = false } }
-        )) {
+        .sheet(isPresented: $viewModel.showingSignUp) {
             SignUpView()
         }
-        .sheet(item: Binding<Ticket?>(
-            get: { viewModel?.selectedTicket },
-            set: { viewModel?.selectedTicket = $0 }
-        )) { ticket in
+        .sheet(item: $viewModel.selectedTicket) { ticket in
             TicketDetailView(ticket: ticket)
         }
         .alert("Error", isPresented: Binding<Bool>(
-            get: { viewModel?.errorMessage != nil },
-            set: { if !$0 { viewModel?.errorMessage = nil } }
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
         )) {
-            Button("OK") { viewModel?.errorMessage = nil }
+            Button("OK") { viewModel.errorMessage = nil }
         } message: {
-            Text(viewModel?.errorMessage ?? "")
+            Text(viewModel.errorMessage ?? "")
         }
     }
     
@@ -73,28 +60,23 @@ struct TicketsView: View {
     
     @ViewBuilder
     private var contentForAuthState: some View {
-        if let viewModel = viewModel {
-            switch viewModel.authState {
-            case .loading:
-                LoadingStateView(message: "Loading your tickets...")
-                
-            case .notAuthenticated:
-                notAuthenticatedContent
-                
-            case .biometricRequired(let user):
-                biometricRequiredContent(user: user)
-                
-            case .guest(let user), .authenticated(let user):
-                authenticatedContent(user: user)
-                
-            case .error(let message):
-                ErrorStateView(message: message) {
-                    Task { await viewModel.refreshTickets() }
-                }
+        switch viewModel.authState {
+        case .loading:
+            LoadingStateView(message: "Loading your tickets...")
+            
+        case .notAuthenticated:
+            notAuthenticatedContent
+            
+        case .biometricRequired(let user):
+            biometricRequiredContent(user: user)
+            
+        case .guest(let user), .authenticated(let user):
+            authenticatedContent(user: user)
+            
+        case .error(let message):
+            ErrorStateView(message: message) {
+                Task { await viewModel.refreshTickets() }
             }
-        } else {
-            // Fallback while viewModel is being initialized
-            LoadingStateView(message: "Initializing...")
         }
     }
     
@@ -103,8 +85,8 @@ struct TicketsView: View {
             welcomeHeader
             
             AuthenticationOptions(
-                onSignUp: { viewModel?.showSignUp() },
-                onSignIn: { viewModel?.showSignIn() },
+                onSignUp: { viewModel.showSignUp() },
+                onSignIn: { viewModel.showSignIn() },
                 onAppleSignIn: { /* TODO: Apple Sign-In */ },
                 onGoogleSignIn: { /* TODO: Google Sign-In */ }
             )

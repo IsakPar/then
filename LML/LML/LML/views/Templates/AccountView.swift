@@ -12,7 +12,7 @@ import LocalAuthentication
 // MARK: - Account View Template
 struct AccountView: View {
     @EnvironmentObject var authManager: AuthManager
-    @State private var viewModel: AccountViewModel?
+    @StateObject private var viewModel: AccountViewModel = AccountViewModel(authManager: AuthManager.shared)
     
     var body: some View {
         NavigationView {
@@ -42,37 +42,24 @@ struct AccountView: View {
             )
         }
         .onAppear {
-            // Initialize viewModel with environment object if not already done
-            if viewModel == nil {
-                viewModel = AccountViewModel(authManager: authManager)
-                print("🔍 AccountView: Created viewModel with authManager, current state: \(authManager.authState)")
-            }
+            print("🔍 AccountView: Appeared with authManager, current state: \(authManager.authState)")
         }
-        .sheet(isPresented: Binding(
-            get: { viewModel?.showingSignIn ?? false },
-            set: { if !$0 { viewModel?.showingSignIn = false } }
-        )) {
+        .sheet(isPresented: $viewModel.showingSignIn) {
             SignInView()
         }
-        .sheet(isPresented: Binding(
-            get: { viewModel?.showingSignUp ?? false },
-            set: { if !$0 { viewModel?.showingSignUp = false } }
-        )) {
+        .sheet(isPresented: $viewModel.showingSignUp) {
             SignUpView()
         }
-        .sheet(isPresented: Binding(
-            get: { viewModel?.showingForgotPassword ?? false },
-            set: { if !$0 { viewModel?.showingForgotPassword = false } }
-        )) {
+        .sheet(isPresented: $viewModel.showingForgotPassword) {
             ForgotPasswordView()
         }
         .alert("Error", isPresented: Binding<Bool>(
-            get: { viewModel?.errorMessage != nil },
-            set: { if !$0 { viewModel?.errorMessage = nil } }
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
         )) {
-            Button("OK") { viewModel?.errorMessage = nil }
+            Button("OK") { viewModel.errorMessage = nil }
         } message: {
-            Text(viewModel?.errorMessage ?? "")
+            Text(viewModel.errorMessage ?? "")
         }
     }
     
@@ -85,28 +72,23 @@ struct AccountView: View {
     
     @ViewBuilder
     private var contentForAuthState: some View {
-        if let viewModel = viewModel {
-            switch viewModel.authState {
-            case .loading:
-                LoadingStateView(message: "Loading your account...")
-                
-            case .notAuthenticated:
-                notAuthenticatedContent
-                
-            case .biometricRequired(let user):
-                biometricRequiredContent(user: user)
-                
-            case .guest(let user), .authenticated(let user):
-                authenticatedContent(user: user)
-                
-            case .error(let message):
-                ErrorStateView(message: message) {
-                    viewModel.refreshSession()
-                }
+        switch viewModel.authState {
+        case .loading:
+            LoadingStateView(message: "Loading your account...")
+            
+        case .notAuthenticated:
+            notAuthenticatedContent
+            
+        case .biometricRequired(let user):
+            biometricRequiredContent(user: user)
+            
+        case .guest(let user), .authenticated(let user):
+            authenticatedContent(user: user)
+            
+        case .error(let message):
+            ErrorStateView(message: message) {
+                viewModel.refreshSession()
             }
-        } else {
-            // Fallback while viewModel is being initialized
-            LoadingStateView(message: "Initializing...")
         }
     }
     
@@ -115,10 +97,10 @@ struct AccountView: View {
             welcomeHeader
             
             AuthenticationOptions(
-                onSignUp: { viewModel?.showSignUp() },
-                onSignIn: { viewModel?.showSignIn() },
-                onAppleSignIn: { viewModel?.signInWithApple() },
-                onGoogleSignIn: { viewModel?.signInWithGoogle() }
+                onSignUp: { viewModel.showSignUp() },
+                onSignIn: { viewModel.showSignIn() },
+                onAppleSignIn: { viewModel.signInWithApple() },
+                onGoogleSignIn: { viewModel.signInWithGoogle() }
             )
             .padding(.horizontal, 16)
         }
@@ -156,7 +138,7 @@ struct AccountView: View {
                     title: "Authenticate with Biometric",
                     icon: "faceid",
                     style: .primary,
-                    action: { viewModel?.authenticateWithBiometric() }
+                    action: { viewModel.authenticateWithBiometric() }
                 )
                 .padding(.horizontal, 16)
             }
@@ -173,7 +155,7 @@ struct AccountView: View {
                 onSettings: { /* TODO: Navigate to settings */ },
                 onSupport: { /* TODO: Navigate to support */ },
                 onPrivacy: { /* TODO: Navigate to privacy */ },
-                onSignOut: { viewModel?.signOut() }
+                onSignOut: { viewModel.signOut() }
             )
             .padding(.horizontal, 16)
         }
@@ -191,7 +173,7 @@ struct AccountView: View {
             .padding(.horizontal, 16)
             
             HStack(spacing: 12) {
-                ForEach(Array((viewModel?.userStats ?? []).enumerated()), id: \.offset) { index, stat in
+                ForEach(Array(viewModel.userStats.enumerated()), id: \.offset) { index, stat in
                     AccountStatCard(
                         title: stat.title,
                         value: stat.value,
@@ -199,7 +181,7 @@ struct AccountView: View {
                         color: stat.color
                     )
                     
-                    if index < (viewModel?.userStats.count ?? 0) - 1 {
+                    if index < viewModel.userStats.count - 1 {
                         Spacer()
                     }
                 }
