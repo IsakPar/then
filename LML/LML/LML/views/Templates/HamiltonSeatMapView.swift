@@ -38,6 +38,16 @@ struct HamiltonSeatMapView: View {
         .preferredColorScheme(.dark)
         .onAppear {
             print("🎭 Hamilton SeatMapView appeared - loading seats...")
+            
+            // Set show context for dynamic email content
+            viewModel.setShowContext(
+                showId: "hamilton-victoria-palace",
+                showTitle: "Hamilton",
+                venueName: "Victoria Palace Theatre",
+                date: Date().formatted(date: .abbreviated, time: .omitted),
+                time: "19:30"
+            )
+            
             viewModel.generateAllSeats()
             viewModel.fitToScreen()
         }

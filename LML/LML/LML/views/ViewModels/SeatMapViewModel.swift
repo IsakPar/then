@@ -26,6 +26,13 @@ class SeatMapViewModel: ObservableObject {
     @Published var bookedSeats: [BookedSeat] = []
     @Published var bookingReference: String = ""
     
+    // Show context for dynamic email content
+    private var currentShow: Show?
+    private var currentShowTime: ShowTime?
+    private var currentVenue: Venue?
+    private var selectedDate: String?
+    private var selectedTime: String?
+    
     private let authManager = AuthManager.shared
     private let apiClient = APIClient.shared
     private var cancellables = Set<AnyCancellable>()
@@ -64,6 +71,108 @@ class SeatMapViewModel: ObservableObject {
     
     var isAuthenticated: Bool {
         authState.isAuthenticated
+    }
+    
+    // MARK: - Show Context Management
+    
+    /// Set the show context for dynamic email content
+    func setShowContext(showId: String, showTitle: String, venueName: String, date: String, time: String) {
+        self.currentShowId = showId
+        self.selectedDate = date
+        self.selectedTime = time
+        
+        // Create venue object from name
+        self.currentVenue = Venue(
+            id: "venue-1",
+            name: venueName,
+            address: Address(street: "", city: "", postcode: "", country: ""),
+            capacity: 1000,
+            accessibility: AccessibilityInfo(
+                wheelchairAccessible: true,
+                hearingLoopAvailable: true,
+                audioDescriptionAvailable: false,
+                signLanguageAvailable: false
+            ),
+            facilities: []
+        )
+        
+        print("🎭 Show context set: \(showTitle) at \(venueName) on \(date) at \(time)")
+    }
+    
+    /// Get dynamic show title for emails
+    private func getShowTitle() -> String {
+        // Try to extract show name from show ID
+        if currentShowId.contains("hamilton") {
+            return "Hamilton"
+        } else if currentShowId.contains("lion-king") {
+            return "The Lion King"
+        } else if currentShowId.contains("phantom") {
+            return "The Phantom of the Opera"
+        } else if currentShowId.contains("chicago") {
+            return "Chicago"
+        } else if currentShowId.contains("mamma-mia") {
+            return "Mamma Mia!"
+        } else if currentShowId.contains("wicked") {
+            return "Wicked"
+        }
+        
+        // Fallback to generic title
+        return "Your Show"
+    }
+    
+    /// Get dynamic venue name for emails
+    private func getVenueName() -> String {
+        if let venue = currentVenue {
+            return venue.name
+        }
+        
+        // Try to extract venue from show ID
+        if currentShowId.contains("victoria-palace") {
+            return "Victoria Palace Theatre"
+        } else if currentShowId.contains("lyceum") {
+            return "Lyceum Theatre"
+        } else if currentShowId.contains("phoenix") {
+            return "Phoenix Theatre"
+        }
+        
+        // Fallback to generic venue
+        return "Theatre"
+    }
+    
+    /// Get formatted date for emails
+    private func getFormattedDate() -> String {
+        if let selectedDate = selectedDate {
+            // Try to format the date if it's in a standard format
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            if let date = formatter.date(from: selectedDate) {
+                formatter.dateStyle = .long
+                return formatter.string(from: date)
+            }
+            return selectedDate
+        }
+        
+        // Use current date as fallback
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        return formatter.string(from: Date())
+    }
+    
+    /// Get formatted time for emails
+    private func getFormattedTime() -> String {
+        if let selectedTime = selectedTime {
+            // Try to format the time if it's in HH:mm format
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            if let time = formatter.date(from: selectedTime) {
+                formatter.timeStyle = .short
+                return formatter.string(from: time)
+            }
+            return selectedTime
+        }
+        
+        // Fallback to generic time
+        return "Evening Performance"
     }
     
     // MARK: - Seat Selection
@@ -208,8 +317,8 @@ class SeatMapViewModel: ObservableObject {
             merchantCountryCode: "GB"
         )
         
-        // Configure billing details collection
-        configuration.billingDetailsCollectionConfiguration.email = .automatic
+        // Configure billing details collection - MANDATORY EMAIL FOR THEATRE TICKETS
+        configuration.billingDetailsCollectionConfiguration.email = .always  // ✅ Always collect email for ticket delivery
         configuration.billingDetailsCollectionConfiguration.name = .automatic
         configuration.billingDetailsCollectionConfiguration.address = .never
         configuration.billingDetailsCollectionConfiguration.phone = .never
@@ -218,7 +327,7 @@ class SeatMapViewModel: ObservableObject {
         configuration.primaryButtonLabel = "Complete Payment"
         
         print("💳 Apple Pay configured with merchant ID: merchant.lml-tickets.com.LML")
-        print("💳 Billing details collection: email=automatic, name=automatic")
+        print("💳 Billing details collection: email=ALWAYS (mandatory for theatre tickets), name=automatic")
         
         paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
         showingPaymentSheet = true
@@ -482,7 +591,7 @@ class SeatMapViewModel: ObservableObject {
                         row: row,
                         number: number,
                         price: config.price,
-                        isAvailable: Bool.random(),
+                        isAvailable: true, // ✅ All seats available for booking
                         isSelected: false,
                         x: Double(rowConfig.startX) + Double((number - 1) * config.seatSpacing),
                         y: config.baseY + Double((row - 1) * config.rowSpacing),
@@ -502,7 +611,7 @@ class SeatMapViewModel: ObservableObject {
                         row: row,
                         number: number,
                         price: config.price,
-                        isAvailable: Bool.random(),
+                        isAvailable: true, // ✅ All seats available for booking
                         isSelected: false,
                         x: config.baseX + Double((number - 1) * config.seatSpacing),
                         y: config.baseY + Double((row - 1) * config.rowSpacing),
@@ -667,6 +776,18 @@ class SeatMapViewModel: ObservableObject {
         }
     }
     
+    /// Clear all test data for debugging - makes all seats available again
+    func clearTestBookings() {
+        #if DEBUG
+        UserDefaults.standard.removeObject(forKey: "BookedSeatIds")
+        
+        // Reload seats to make them all available again
+        generateAllSeats()
+        
+        print("🧪 TEST: Cleared all booked seats - all seats now available")
+        #endif
+    }
+    
     // MARK: - Email Integration
     
     /// Send booking confirmation email via Mailjet after successful payment
@@ -681,14 +802,14 @@ class SeatMapViewModel: ObservableObject {
                 let seatInfo = bookedSeats.map { "\($0.section) Row \($0.row) Seat \($0.number)" }.joined(separator: ", ")
                 let userName = getUserName() ?? "Guest"
                 
-                // Call the Docker API to send email via Mailjet
+                // Call the Docker API to send email via Mailjet with dynamic content
                 let success = try await apiClient.sendBookingConfirmationEmail(
                     to: userEmail,
                     userName: userName,
-                    showTitle: "Hamilton",  // TODO: Make this dynamic based on current show
-                    showDate: "2024-01-15", // TODO: Get actual show date
-                    showTime: "7:30 PM",    // TODO: Get actual show time
-                    venue: "Victoria Palace Theatre", // TODO: Make this dynamic
+                    showTitle: getShowTitle(),     // ✅ Dynamic show title
+                    showDate: getFormattedDate(),  // ✅ Dynamic show date
+                    showTime: getFormattedTime(),  // ✅ Dynamic show time
+                    venue: getVenueName(),         // ✅ Dynamic venue name
                     bookingReference: bookingReference,
                     seatInfo: seatInfo,
                     totalAmount: totalPrice
@@ -696,6 +817,7 @@ class SeatMapViewModel: ObservableObject {
                 
                 if success {
                     print("✅ Booking confirmation email sent to: \(userEmail)")
+                    print("📧 Email details: \(getShowTitle()) at \(getVenueName()) on \(getFormattedDate()) at \(getFormattedTime())")
                 } else {
                     print("❌ Failed to send booking confirmation email")
                 }

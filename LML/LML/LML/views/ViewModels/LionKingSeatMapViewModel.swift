@@ -191,7 +191,7 @@ class LionKingSeatMapViewModel: ObservableObject {
                     row: row + 1,
                     number: seatNum,
                     price: row < 5 ? 8500 : (row < 10 ? 6500 : 4500),
-                    isAvailable: Double.random(in: 0...1) < 0.7, // 70% available
+                    isAvailable: true, // ✅ All seats available for booking
                     isSelected: false,
                     x: startX + Double(seatNum - 1) * seatSpacing + xOffset,
                     y: startY + Double(row) * rowSpacing,

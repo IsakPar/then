@@ -137,11 +137,18 @@ struct NativePaymentView: View {
                 merchantCountryCode: "GB"
             )
             
+            // Configure billing details collection - MANDATORY EMAIL FOR THEATRE TICKETS
+            configuration.billingDetailsCollectionConfiguration.email = .always  // ✅ Always collect email for ticket delivery
+            configuration.billingDetailsCollectionConfiguration.name = .automatic
+            configuration.billingDetailsCollectionConfiguration.address = .never
+            configuration.billingDetailsCollectionConfiguration.phone = .never
+            
             // Configure additional payment options
             configuration.primaryButtonLabel = "Complete Payment"
             configuration.defaultBillingDetails.name = "LastMinuteLive Customer"
             
             print("💳 Apple Pay configured with merchant ID: merchant.lml-tickets.com.LML")
+            print("💳 Billing details collection: email=ALWAYS (mandatory for theatre tickets), name=automatic")
             
             // Create PaymentSheet
             self.paymentSheet = PaymentSheet(

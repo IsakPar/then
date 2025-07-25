@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // Side A section mappings (50 seats: 10 rows x 5 seats)
     console.log('🎨 Creating side A section mappings...')
-    const sideASeats = getSeatsForSection(['box', 'side', 'royal'], 50)
+    const sideASeats = getSeatsForSection(['mezzanine', 'orchestra'], 50)
     seatIndex = 0
     
     for (let row = 1; row <= 10 && seatIndex < sideASeats.length; row++) {
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     // Side B section mappings (50 seats: 10 rows x 5 seats)
     console.log('🎨 Creating side B section mappings...')
-    const sideBSeats = getSeatsForSection(['grand', 'upper', 'gallery'], 50)
+    const sideBSeats = getSeatsForSection(['mezzanine', 'balcony'], 50)
     seatIndex = 0
     
     for (let row = 1; row <= 10 && seatIndex < sideBSeats.length; row++) {
