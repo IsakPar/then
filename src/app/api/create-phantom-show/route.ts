@@ -21,15 +21,9 @@ export async function POST(request: NextRequest) {
       console.log('🏛️ Creating Her Majesty\'s Theatre venue...')
       const newVenue = await db.insert(venues).values({
         name: "Her Majesty's Theatre",
+        slug: "her-majestys-theatre",
         address: "Haymarket, St. James's, London SW1Y 4QL, United Kingdom",
-        city: "London",
-        postalCode: "SW1Y 4QL",
-        country: "United Kingdom",
-        capacity: 1252,
-        contactEmail: "info@hmtheatre.co.uk",
-        contactPhone: "+44 20 7087 7762",
-        timezone: "Europe/London",
-        isActive: true
+        description: "Historic West End theatre, home to The Phantom of the Opera since 1986"
       }).returning({ id: venues.id })
       
       venueId = newVenue[0].id
