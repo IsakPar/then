@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
         services: {
             database: 'unknown',
-            redis: 'unknown'
+            redis: 'unknown',
+            mongodb: 'unknown'
         }
     };
     
@@ -35,6 +36,22 @@ export async function GET(request: NextRequest) {
         health.services.redis = 'unhealthy';
         health.status = 'unhealthy';
         console.error('Redis health check failed:', error);
+    }
+    
+    try {
+        // Test MongoDB connection
+        if (process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.MONGO_URL) {
+            const { connectToMongoDB } = await import('@/lib/mongodb/connection');
+            const { db } = await connectToMongoDB();
+            await db.admin().ping();
+            health.services.mongodb = 'healthy';
+        } else {
+            health.services.mongodb = 'not_configured';
+        }
+    } catch (error) {
+        health.services.mongodb = 'unhealthy';
+        health.status = 'unhealthy';
+        console.error('MongoDB health check failed:', error);
     }
     
     return NextResponse.json(health, { 

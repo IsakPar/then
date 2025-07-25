@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if MongoDB is configured (support both Railway's MONGODB_URL and MONGODB_URI)
-    if (!process.env.MONGODB_URI && !process.env.MONGODB_URL) {
+    // Check if MongoDB is configured (support Railway's MONGO_URL, MONGODB_URL, and MONGODB_URI)
+    if (!process.env.MONGODB_URI && !process.env.MONGODB_URL && !process.env.MONGO_URL) {
       return NextResponse.json({ 
         success: false, 
-        error: 'MongoDB not configured. Please set MONGODB_URI or MONGODB_URL environment variable.',
+        error: 'MongoDB not configured. Please set MONGODB_URI, MONGODB_URL, or MONGO_URL environment variable.',
         details: 'This endpoint requires MongoDB to be configured.'
       }, { status: 503 })
     }
