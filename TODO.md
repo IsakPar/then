@@ -6,6 +6,33 @@
 
 ## 🚨 **PRIORITY 1: CRITICAL UX ISSUES**
 
+### **❌ PAYMENT CONFIRMATION POPUP ISSUES (NEW)**
+- [ ] **FIX: Confirmation popup shows price £0.00**
+  - [ ] Debug payment intent response data
+  - [ ] Ensure actual total price is passed to confirmation
+  - [ ] Fix price formatting in popup display
+- [ ] **FIX: Confirmation popup not showing selected seats**
+  - [ ] Debug seat data in payment confirmation
+  - [ ] Ensure seat IDs/names are properly displayed
+  - [ ] Fix seat list formatting in popup
+- [ ] **FIX: Success page navigation (Done button)**
+  - [ ] Currently goes back to seat map
+  - [ ] Should navigate to main page/ContentView
+  - [ ] Update navigation flow in iOS app
+
+### **❌ MONGODB COLLECTIONS MISSING**
+- [ ] **MongoDB connected but empty**
+  - [ ] Initialize Hamilton collection via API
+  - [ ] Initialize Phantom collection via API  
+  - [ ] Verify collections are created properly
+  - [ ] Test seat map data retrieval
+
+### **❌ DEPLOYMENT WORKFLOW VIOLATION** 
+- [ ] **Assistant failed to test locally before pushing** 
+  - [ ] Violated memory rule about `pnpm run build` before push
+  - [ ] Railway deployment in progress without local validation
+  - [ ] Need to establish stronger workflow enforcement
+
 ### **❌ TICKET PERSISTENCE & BOOKING FLOW**
 - [ ] **FIX: Tickets not appearing in "Tickets" tab after successful booking**
   - [ ] Investigate booking save mechanism to PostgreSQL

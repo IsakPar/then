@@ -1,363 +1,312 @@
-# 🎭 Last Minute Live iOS App - Cursor Rules
+# 🎭 Last Minute Live - Cursor Rules & Project Patterns
 
-## 📱 SwiftUI Project Standards & Architecture
+## 🚨 **CRITICAL WORKFLOW RULES**
 
-### 🏗️ **ARCHITECTURE PRINCIPLES**
+### **ALWAYS TEST LOCALLY BEFORE PUSHING**
+```bash
+# MANDATORY before any git push:
+pnpm run build          # Test Next.js build
+docker build . --no-cache  # Test Docker build (if applicable)
 
-#### **Component Hierarchy (Atomic Design)**
-```
-Atoms/         # Basic UI elements (buttons, inputs, labels)
-├── Molecules/ # Simple combinations (form fields, cards)
-├── Organisms/ # Complex components (navigation, seat maps)
-└── Templates/ # Page layouts and structures
+# Only push if both succeed:
+git add .
+git commit -m "..."
+git push origin main
 ```
 
-#### **Folder Structure Enforcement**
-```
-Views/
-├── Atoms/           # Single-purpose components (<50 lines)
-│   ├── Buttons/
-│   ├── Inputs/
-│   └── Text/
-├── Molecules/       # Composite components (<150 lines)
-│   ├── Cards/
-│   ├── Forms/
-│   └── Navigation/
-├── Organisms/       # Complex components (<300 lines)
-│   ├── SeatMaps/
-│   ├── Payment/
-│   └── Authentication/
-└── Templates/       # Full screens (<200 lines)
-    ├── Account/
-    ├── Tickets/
-    └── Shows/
-```
+### **DEPLOYMENT PIPELINE**
+- Railway auto-deploys from `main` branch
+- PostgreSQL, Redis, MongoDB all hosted on Railway
+- Production URL: `https://then-production.up.railway.app`
+- Always verify APIs work in production after deployment
 
 ---
 
-## 🚨 **STRICT LINE LIMITS**
+## 📱 **iOS APP ARCHITECTURE PATTERNS**
 
-### **File Size Constraints**
-- **Atoms**: MAX 50 lines
-- **Molecules**: MAX 150 lines  
-- **Organisms**: MAX 300 lines
-- **Templates/Screens**: MAX 200 lines
-- **ViewModels**: MAX 250 lines
-- **Models**: MAX 100 lines
-- **Services**: MAX 300 lines
-
-### **Function/Method Limits**
-- **View body**: MAX 50 lines
-- **Functions**: MAX 30 lines
-- **Computed properties**: MAX 10 lines
-
-**❌ VIOLATION EXAMPLES:**
+### **SwiftUI ViewModels**
 ```swift
-// BAD: 977-line HamiltonSeatMapView.swift
-// BAD: Massive view body with all logic inline
-// BAD: Mixed UI and business logic in same file
-```
-
-**✅ COMPLIANCE EXAMPLES:**
-```swift
-// GOOD: SeatButton.swift (Atom - 25 lines)
-// GOOD: SeatSection.swift (Molecule - 80 lines)  
-// GOOD: SeatMapCanvas.swift (Organism - 250 lines)
-```
-
----
-
-## 🎯 **SINGLE RESPONSIBILITY ENFORCEMENT**
-
-### **View Responsibility Rules**
-1. **Views**: ONLY UI declaration and layout
-2. **ViewModels**: ONLY state management and business logic  
-3. **Services**: ONLY data operations and API calls
-4. **Models**: ONLY data structures and computed properties
-
-### **SwiftUI View Guidelines**
-```swift
-// ✅ GOOD: Clean separation
-struct SeatButton: View {
-    let seat: TheaterSeat
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            seatAppearance
-        }
-    }
-    
-    private var seatAppearance: some View {
-        // UI only - no business logic
-    }
-}
-
-// ❌ BAD: Mixed concerns
-struct SeatButton: View {
-    var body: some View {
-        Button {
-            // ❌ Business logic in view
-            calculatePrice()
-            updateDatabase()
-            processPayment()
-        } label: {
-            // UI code
-        }
-    }
-}
-```
-
----
-
-## 🔄 **BUSINESS LOGIC SEPARATION**
-
-### **ViewModel Pattern (Required)**
-```swift
-// ✅ REQUIRED: Every complex view needs a ViewModel
+// ✅ CORRECT: ObservableObject with @Published
 class SeatMapViewModel: ObservableObject {
-    @Published var seats: [TheaterSeat] = []
-    @Published var selectedSeats: [TheaterSeat] = []
+    @Published var selectedSeats: [Seat] = []
     @Published var totalPrice: Int = 0
+    @Published var isLoading = false
     
     // Business logic here, NOT in views
-    func selectSeat(_ seat: TheaterSeat) { }
+    func selectSeat(_ seat: Seat) { }
     func calculateTotal() { }
-    func processPayment() { }
 }
 
+// ❌ WRONG: Business logic in views
 struct SeatMapView: View {
-    @StateObject private var viewModel = SeatMapViewModel()
+    var body: some View {
+        Button {
+            // ❌ Don't put business logic here
+            calculatePrice()
+            updateDatabase()
+        }
+    }
+}
+```
+
+### **API Service Pattern**
+```swift
+// ✅ Use this pattern for all API services
+class ShowsService: ObservableObject {
+    @Published var shows: [Show] = []
+    @Published var isLoading = false
     
-    var body: some View {
-        // UI only - delegate actions to viewModel
-    }
-}
-```
-
-### **Prohibited in Views**
-- ❌ API calls
-- ❌ Database operations  
-- ❌ Complex calculations
-- ❌ Business rules
-- ❌ Payment processing
-- ❌ Authentication logic
-
----
-
-## 🧩 **COMPONENT REUSABILITY**
-
-### **Reusable Component Requirements**
-1. **Configurable**: Accept parameters for customization
-2. **Standalone**: No external dependencies except data
-3. **Testable**: Clear inputs and outputs
-4. **Documented**: Clear purpose and usage examples
-
-### **Component Creation Rules**
-```swift
-// ✅ GOOD: Reusable component
-struct PriceTag: View {
-    let amount: Int
-    let style: PriceStyle = .standard
+    private let baseURL = "https://then-production.up.railway.app"
     
-    var body: some View {
-        Text(formatPrice(amount))
-            .foregroundColor(style.color)
-    }
-}
-
-// ❌ BAD: Hardcoded, non-reusable
-struct HamiltonPrice: View {
-    var body: some View {
-        Text("£85") // Hardcoded
-            .foregroundColor(.yellow) // Non-configurable
+    func loadShows() async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        // API call logic
     }
 }
 ```
 
----
-
-## 🚫 **MOCK DATA PREVENTION**
-
-### **Production Code Rules**
-- ❌ NO hardcoded show data in production builds
-- ❌ NO fake user information
-- ❌ NO mock API responses
-- ✅ USE proper data services with fallbacks
-- ✅ USE environment-based configuration
-
-### **Development vs Production**
+### **Navigation Pattern**
 ```swift
-// ✅ CORRECT: Environment-based data
-struct ShowService {
-    func getShows() async -> [Show] {
-        #if DEBUG
-        return mockShows // Only in debug builds
-        #else
-        return await apiClient.fetchShows() // Production API
-        #endif
+// ✅ CORRECT: NavigationView with proper flow
+ContentView → ShowCard → SeatMapView → PaymentView → SuccessView → ContentView
+//                                                                    ↑
+//                                                    Done button should go here
+
+// ❌ WRONG: Success page going back to SeatMapView
+```
+
+---
+
+## 🗄️ **DATABASE PATTERNS**
+
+### **Hybrid Architecture**
+- **PostgreSQL**: Users, bookings, payments, pricing, availability
+- **MongoDB**: Seat map layouts, complex JSON structures
+- **Redis**: Session management, seat reservations (15min holds)
+
+### **Schema Field Names (PostgreSQL)**
+```typescript
+// ✅ CORRECT field names from schema.ts:
+bookings.customerEmail      // NOT userEmail
+bookings.totalAmountPence   // NOT totalPricePence  
+bookings.validationCode     // NOT qrCode
+shows.date                  // NOT showDate
+shows.time                  // NOT showTime
+
+// Junction table for seats:
+bookingSeats.bookingId
+bookingSeats.seatId
+bookingSeats.pricePaidPence
+```
+
+### **API Endpoint Patterns**
+```typescript
+// ✅ CORRECT patterns:
+/api/shows                  // Dynamic show loading
+/api/user/bookings?email=   // Booking history  
+/api/seatmap/init-hamilton  // MongoDB initialization
+/api/seatmap/phantom-hybrid // Hybrid MongoDB+PostgreSQL
+/api/payment-intent-mongo   // MongoDB seat booking
+```
+
+---
+
+## 🎯 **SEAT MAPPING SYSTEMS**
+
+### **Show Type Detection**
+```typescript
+// Auto-detect seat map type:
+const seatMapType = 
+  title.includes('hamilton') ? 'mongodb' : 
+  title.includes('phantom') ? 'hybrid' : 'standard';
+
+// iOS config:
+ios_config: {
+  api_endpoint: seatMapType === 'mongodb' ? '/api/payment-intent-mongo' : 
+               seatMapType === 'hybrid' ? '/api/seatmap/phantom-hybrid' : 
+               '/api/payment-intent',
+  booking_flow: seatMapType
+}
+```
+
+### **Hardcoded Seat ID Patterns**
+```typescript
+// Hamilton (MongoDB): "premium-A-1", "mezzanine-B-5"
+// Phantom (Hybrid): "orchestra-premium-A-1", "circle-rear-E-10"
+// Format: {section}-{row}-{number}
+```
+
+---
+
+## 🔧 **COMMON ISSUES & SOLUTIONS**
+
+### **Payment Confirmation Issues**
+```swift
+// ❌ PROBLEM: Shows price £0.00 and no seats
+// ✅ SOLUTION: Pass actual data to confirmation
+struct PaymentConfirmation {
+    let totalPrice: Int        // In pence, e.g. 8500 = £85.00
+    let selectedSeats: [String] // ["A-1", "A-2"]
+    let showTitle: String
+    let showDate: String
+}
+```
+
+### **Navigation Flow Issues**  
+```swift
+// ❌ PROBLEM: Success page goes back to seat map
+// ✅ SOLUTION: Use proper navigation dismissal
+@Environment(\.presentationMode) var presentationMode
+
+Button("Done") {
+    // Dismiss all sheets and go to root
+    presentationMode.wrappedValue.dismiss()
+    // Or use NavigationView with .navigationViewStyle()
+}
+```
+
+### **MongoDB Collection Issues**
+```bash
+# ✅ Initialize collections after MongoDB setup:
+curl -X POST .../api/seatmap/init-hamilton -d '{"show": "hamilton"}'
+curl -X POST .../api/seatmap/init-hamilton -d '{"show": "phantom"}'
+
+# ✅ Verify collections exist:
+curl -X GET .../api/seatmap/init-hamilton?show=phantom
+```
+
+---
+
+## 🎨 **UI/UX PATTERNS**
+
+### **Error Handling**
+```swift
+// ✅ Always show user-friendly errors
+@State private var errorMessage: String?
+
+// In async functions:
+catch {
+    await MainActor.run {
+        errorMessage = "Failed to load shows. Please try again."
     }
 }
-
-// ❌ WRONG: Always mock data
-let shows = [
-    Show(name: "Hamilton", venue: "Victoria Palace")
-] // This will be in production!
 ```
 
----
-
-## 📝 **SWIFTLINT COMPLIANCE**
-
-### **Required Rules**
-- `line_length: 120`
-- `file_length: warning: 300, error: 400`
-- `function_body_length: warning: 30, error: 50`
-- `type_body_length: warning: 200, error: 300`
-- `cyclomatic_complexity: warning: 10, error: 20`
-- `force_cast: error`
-- `force_try: error`
-- `force_unwrapping: warning`
-
-### **Naming Conventions**
-- **Classes**: PascalCase (`AuthManager`, `SeatMapViewModel`)
-- **Functions**: camelCase (`selectSeat`, `calculateTotal`)
-- **Variables**: camelCase (`selectedSeats`, `totalPrice`)
-- **Constants**: camelCase (`maxSeatCount`, `defaultTimeout`)
-- **Files**: PascalCase matching main type (`SeatButton.swift`)
-
----
-
-## 🔧 **CODE QUALITY ENFORCEMENT**
-
-### **Required Before Commit**
-1. **SwiftLint**: No errors, minimal warnings
-2. **Line limits**: All files within prescribed limits
-3. **Single responsibility**: Each file has one clear purpose
-4. **No mixed concerns**: UI and business logic separated
-5. **Reusable components**: No duplicate UI code
-
-### **Refactoring Triggers**
-- File exceeds line limits → Split into smaller components
-- Mixed UI/business logic → Create ViewModel
-- Duplicate code → Extract reusable component
-- Hardcoded values → Move to configuration/service
-- Complex view hierarchy → Break into Atoms/Molecules
-
-### **Component Extraction Examples**
+### **Loading States**
 ```swift
-// BEFORE: 977-line HamiltonSeatMapView.swift
-// AFTER: Extract into:
-// - SeatButton.swift (Atom)
-// - SeatSection.swift (Molecule)  
-// - TheaterStage.swift (Molecule)
-// - SeatSelectionPanel.swift (Molecule)
-// - PaymentSheet.swift (Organism)
-// - SeatMapCanvas.swift (Organism)
-// - HamiltonSeatMapView.swift (Template)
+// ✅ Always provide loading feedback
+@State private var isLoading = false
+
+if isLoading {
+    ProgressView("Loading shows...")
+} else {
+    // Content here
+}
 ```
 
 ---
 
-## 🎨 **UI/UX STANDARDS**
+## 🔐 **SECURITY PATTERNS**
 
-### **Design System**
-- **Colors**: Use theme-based color system (no hardcoded hex)
-- **Typography**: Predefined text styles
-- **Spacing**: Consistent spacing units (8, 16, 24, 32)
-- **Animations**: Subtle, purposeful, <300ms duration
+### **Environment Variables**
+```bash
+# Railway Production:
+DATABASE_URL=postgresql://...
+MONGODB_URI=mongodb://...
+REDIS_URL=redis://...
+STRIPE_SECRET_KEY=sk_live_...
+```
 
-### **Accessibility Requirements**
-- All interactive elements have accessibility labels
-- Support Dynamic Type
-- High contrast mode compatibility
-- VoiceOver navigation support
-
----
-
-## 🧪 **TESTING REQUIREMENTS**
-
-### **Unit Test Coverage**
-- **ViewModels**: 90%+ coverage
-- **Services**: 95%+ coverage  
-- **Models**: 80%+ coverage
-- **Business logic**: 100% coverage
-
-### **UI Testing**
-- Critical user flows (seat selection, payment)
-- Navigation between screens
-- Error states and edge cases
+### **CORS Headers**
+```typescript
+// ✅ Add for iOS app compatibility:
+headers: {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-user-email',
+}
+```
 
 ---
 
-## 🚀 **PERFORMANCE STANDARDS**
+## 📋 **TESTING CHECKLIST**
 
-### **SwiftUI Optimization**
-- Use `@StateObject` vs `@ObservedObject` correctly
-- Minimize view re-renders with proper data flow
-- Lazy loading for large lists
-- Image optimization and caching
+### **Before Every Commit**
+- [ ] `pnpm run build` succeeds locally
+- [ ] No TypeScript errors
+- [ ] APIs tested with curl locally (if applicable)
+- [ ] iOS app compiles without errors (if changed)
 
-### **Memory Management**
-- No retain cycles in ViewModels
-- Proper cleanup of observers and timers
-- Efficient seat map rendering (avoid creating 500+ views)
+### **After Deployment**
+- [ ] Test all modified API endpoints
+- [ ] Verify database changes applied
+- [ ] Test iOS app against production APIs
+- [ ] Check Railway logs for errors
 
----
-
-## 📋 **CODE REVIEW CHECKLIST**
-
-### **Before Merging**
-- [ ] All files under line limits
-- [ ] Single responsibility maintained
-- [ ] Business logic in ViewModels, not Views
-- [ ] Reusable components used where possible
-- [ ] No mock data in production code
-- [ ] SwiftLint passes
-- [ ] Unit tests written and passing
-- [ ] UI tests for new features
-- [ ] Accessibility labels added
-- [ ] Performance impact assessed
-
-### **Architecture Review**
-- [ ] Follows Atomic Design principles
-- [ ] Proper folder structure
-- [ ] No circular dependencies
-- [ ] Clear data flow
-- [ ] Testable components
+### **End-to-End Testing**
+- [ ] Complete booking flow: Select seats → Pay → Success → Tickets tab
+- [ ] Dynamic show loading works
+- [ ] New shows appear without app update
+- [ ] Payment confirmation shows correct data
 
 ---
 
-## 🎯 **PHASE IMPLEMENTATION ORDER**
+## 🚀 **DEPLOYMENT TARGETS**
 
-### **Phase 1: Component Extraction (Current)**
-1. Break down HamiltonSeatMapView.swift
-2. Refactor AccountView.swift
-3. Optimize TicketsView.swift
-4. Review AuthManager.swift
+### **Staging/Development**
+- Local: `http://localhost:3000`
+- Test APIs with real Railway database
 
-### **Phase 2: Data Integration**
-- Replace mock data with API services
-- Implement proper error handling
-- Add offline capability
-
-### **Phase 3: Polish & Optimization**
-- Performance optimization
-- Accessibility improvements
-- Animation polish
-- Testing coverage
+### **Production**  
+- Railway: `https://then-production.up.railway.app`
+- iOS App connects to production APIs
+- All payment processing is live
 
 ---
 
-## ❌ **COMMON VIOLATIONS TO AVOID**
+## 📚 **KEY FILES TO UNDERSTAND**
 
-1. **Giant files** (>300 lines)
-2. **Mixed concerns** (UI + business logic)
-3. **Hardcoded values** in production
-4. **Duplicate components** instead of reusing
-5. **Poor naming** (unclear purpose)
-6. **No error handling**
-7. **Force unwrapping** without good reason
-8. **Complex view hierarchies** (>5 levels deep)
+### **Backend**
+- `src/lib/db/schema.ts` - Database schema (CRITICAL for field names)
+- `src/app/api/shows/route.ts` - Dynamic show loading
+- `src/app/api/user/bookings/route.ts` - Booking history
+- `src/lib/mongodb/seatmap-service.ts` - MongoDB operations
 
-**Remember: If a file is getting large or complex, it's time to break it down into smaller, focused components!** 
+### **iOS App**
+- `LML/LML/LML/views/ViewModels/SeatMapViewModel.swift` - Core booking logic
+- `LML/LML/LML/views/Templates/HamiltonSeatMapView.swift` - Hamilton UI
+- Payment flows and navigation controllers
+
+### **Configuration**
+- `TODO.md` - Current priorities and known issues
+- `package.json` - Dependencies and scripts
+- Railway environment variables
+
+---
+
+## ⚠️ **KNOWN GOTCHAS**
+
+1. **Database Schema**: Always check `schema.ts` for exact field names
+2. **MongoDB vs PostgreSQL**: Different shows use different systems
+3. **Seat ID Formats**: Hardcoded IDs vary by show/venue
+4. **iOS Navigation**: Success pages must go to main page, not seat map
+5. **Price Display**: Always in pence in database, convert to pounds for display
+6. **CORS**: Required for iOS app API calls
+7. **Railway Deployment**: Auto-deploys on main branch push
+
+---
+
+## 🎯 **SUCCESS METRICS**
+
+- Users can book tickets and see them in Tickets tab
+- Adding new shows doesn't require app updates  
+- Payment confirmation shows correct price and seats
+- Navigation flows logically (Success → Main page)
+- All seat maps render correctly across different shows
+- Performance: <2s API response, <3s seat map rendering
+
+---
+
+> **Remember**: Always follow the "test locally first" rule - it's there because we learned it the hard way! 🧪✅ 
