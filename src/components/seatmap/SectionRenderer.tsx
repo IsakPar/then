@@ -146,9 +146,9 @@ const SectionRenderer: React.FC<SectionRendererInternalProps> = memo(({
         width: scaledBounds.width + padding * 2,
         height: scaledBounds.height + fontSize * 2 + padding * 2,
         rx: fontSize * 0.3,
-        fill: section.color,
+        fill: section.color || section.color_hex || '#3B82F6',
         fillOpacity: 0.1,
-        stroke: section.color,
+        stroke: section.color || section.color_hex || '#3B82F6',
         strokeWidth: 1,
         strokeOpacity: 0.3
       },
@@ -156,7 +156,7 @@ const SectionRenderer: React.FC<SectionRendererInternalProps> = memo(({
         x: scaledBounds.centerX,
         y: scaledBounds.minY - fontSize * 0.5,
         fontSize,
-        text: section.displayName
+        text: section.displayName || section.display_name || section.name
       },
       seatCount: {
         x: scaledBounds.centerX,
@@ -250,7 +250,10 @@ const SectionRenderer: React.FC<SectionRendererInternalProps> = memo(({
       {/* Section statistics overlay - only for very detailed zoom */}
       {showDetails && zoomLevel > 3 && sectionData.scaledBounds && (
         <SectionStatistics
-          section={section}
+          section={{
+            name: section.name,
+            color: section.color || section.color_hex || '#3B82F6'
+          }}
           seats={sectionData.transformedSeats.map(s => s.seat)}
           bounds={sectionData.scaledBounds}
           selectedCount={sectionData.transformedSeats.filter(s => selectedSeatIds.has(s.seat.id)).length}

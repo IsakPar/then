@@ -1,6 +1,9 @@
 import { getMongoDb } from './connection'
 import { Collection } from 'mongodb'
 
+// Detect build time to avoid MongoDB connection during static generation
+const isBuildTime = typeof window === 'undefined' && !process.env.MONGODB_URI
+
 // Types for MongoDB seat map documents
 export interface SeatMapDocument {
   _id: string
@@ -71,13 +74,17 @@ export interface Seat {
 }
 
 export class SeatMapService {
-  private collection: Collection<SeatMapDocument>
+  private collection: Collection<SeatMapDocument> | null = null
   
   constructor() {
     // Collection will be initialized when first used
   }
 
   private async getCollection(): Promise<Collection<SeatMapDocument>> {
+    if (isBuildTime) {
+      throw new Error('MongoDB service not available during build time')
+    }
+    
     if (!this.collection) {
       const db = await getMongoDb()
       this.collection = db.collection<SeatMapDocument>('seatmaps')

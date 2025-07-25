@@ -2,55 +2,42 @@
 
 import React from 'react';
 import SeatMapContainer from './seatmap/SeatMapContainer';
+import { Seat } from './seatmap/types';
 
 // ============================================================================
 // LEGACY SEAT MAP WRAPPER - Uses new modular system
 // ============================================================================
 
-interface Seat {
-  id: string;
-  row_letter: string;
-  seat_number: number;
-  status: 'available' | 'reserved' | 'booked';
-  section_id: string;
-  section_name?: string;
-  display_name?: string;
-  color_hex?: string;
-  position?: {
-    x: number;
-    y: number;
-  };
-  price_pence?: number;
-  is_accessible?: boolean;
-  notes?: string;
-}
-
 interface SeatMapProps {
   showId: string;
   onSeatSelect: (seat: Seat) => void;
-  onSeatDeselect: (seatId: string) => void;
+  onSeatDeselect: (seat: Seat) => void;
   selectedSeats: Seat[];
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-/**
- * Legacy SeatMap component that wraps the new modular system
- * This maintains backward compatibility while using the enterprise-grade architecture
- */
-const SeatMap: React.FC<SeatMapProps> = ({ 
-  showId, 
-  onSeatSelect, 
-  onSeatDeselect, 
-  selectedSeats 
+const SeatMap: React.FC<SeatMapProps> = ({
+  showId,
+  onSeatSelect,
+  onSeatDeselect,
+  selectedSeats,
+  className,
+  style
 }) => {
-  console.log('🎯 [SeatMap] Using modular seat map system for show:', showId);
-  
+  // Convert selected seats to Set of IDs
+  const selectedSeatIds = new Set(selectedSeats.map(seat => seat.id));
+
   return (
-    <SeatMapContainer
-      showId={showId}
-      onSeatSelect={onSeatSelect}
-      onSeatDeselect={onSeatDeselect}
-      selectedSeats={selectedSeats}
-    />
+    <div className={className} style={style}>
+      <SeatMapContainer
+        showId={showId}
+        selectedSeatIds={selectedSeatIds}
+        onSeatSelect={onSeatSelect}
+        onSeatDeselect={onSeatDeselect}
+        selectedSeats={selectedSeats}
+      />
+    </div>
   );
 };
 

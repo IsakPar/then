@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { seatMapService } from '@/lib/mongodb/seatmap-service'
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if MongoDB is configured
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'MongoDB not configured. Please set MONGODB_URI environment variable.',
+        details: 'This endpoint requires MongoDB to be configured.'
+      }, { status: 503 })
+    }
+
+    // Dynamic import to prevent build-time connection
+    const { seatMapService } = await import('@/lib/mongodb/seatmap-service')
+
     const { show } = await request.json()
     
     console.log(`🎭 Initializing seat map for: ${show || 'Hamilton'}`)
@@ -49,6 +60,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if MongoDB is configured
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({ 
+        exists: false,
+        error: 'MongoDB not configured. Please set MONGODB_URI environment variable.'
+      }, { status: 503 })
+    }
+
+    // Dynamic import to prevent build-time connection
+    const { seatMapService } = await import('@/lib/mongodb/seatmap-service')
+
     const { searchParams } = new URL(request.url)
     const show = searchParams.get('show')
     

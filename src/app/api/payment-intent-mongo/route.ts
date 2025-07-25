@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import crypto from 'crypto'
-import { seatMapService } from '@/lib/mongodb/seatmap-service'
 
 // Force dynamic rendering to prevent build-time errors
 export const dynamic = 'force-dynamic';
@@ -31,10 +30,25 @@ const SHOW_VENUE_MAPPING: Record<string, { venueId: string; showSlug: string }> 
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if MongoDB is configured
+    if (!process.env.MONGODB_URI) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'MongoDB not configured. Please set MONGODB_URI environment variable.',
+        details: 'This endpoint requires MongoDB to be configured.'
+      }, { status: 503 })
+    }
+
+    // Dynamic import to prevent build-time connection
+    const { seatMapService } = await import('@/lib/mongodb/seatmap-service')
+
     console.log('💳 Creating PaymentIntent with MongoDB seat translation...')
     
     const body = await request.json()
     const { showId, specificSeatIds } = body
+    
+    console.log('🎯 MongoDB Payment Intent: Processing seat request...')
+    console.log('📍 Specific seat IDs:', specificSeatIds)
     
     if (!showId) {
       console.error('❌ Missing showId in request')

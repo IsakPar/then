@@ -61,6 +61,8 @@ const SeatMapContainer: React.FC<SeatMapContainerProps> = ({
 
   // Viewport state for virtualization
   const [viewportState, setViewportState] = useState<ViewportState>({
+    x: 0,
+    y: 0,
     zoom: 1,
     panX: 0,
     panY: 0,
@@ -262,6 +264,11 @@ const SeatMapContainer: React.FC<SeatMapContainerProps> = ({
         const bounds = engine.getBounds();
         setViewportState(prev => ({
           ...prev,
+          x: prev.panX,
+          y: prev.panY,
+          zoom: prev.zoom,
+          panX: bounds.padded.minX,
+          panY: bounds.padded.minY,
           bounds: {
             x: bounds.padded.minX,
             y: bounds.padded.minY,
@@ -416,7 +423,7 @@ const SeatMapContainer: React.FC<SeatMapContainerProps> = ({
     });
 
     if (isCurrentlySelected) {
-      onSeatDeselect(seat.id);
+      onSeatDeselect(seat);
       wsClient?.deselectSeat(seat.id);
     } else {
       onSeatSelect(seat);
@@ -439,14 +446,15 @@ const SeatMapContainer: React.FC<SeatMapContainerProps> = ({
     const previousZoom = viewportState.zoom;
     
     setViewportState(prev => ({
+      ...prev,
+      x: panX,
+      y: panY,
       zoom,
       panX,
       panY,
       bounds: {
         ...prev.bounds,
-        x: panX,
-        y: panY,
-        zoom
+        zoom: zoom
       }
     }));
 
@@ -607,6 +615,8 @@ const SeatMapContainer: React.FC<SeatMapContainerProps> = ({
             }}
           >
             <SVGCanvas
+              width={1000}
+              height={700}
               viewBox={renderingProps.viewBox}
               aspectRatio={renderingProps.aspectRatio}
             >
