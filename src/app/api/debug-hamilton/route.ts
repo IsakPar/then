@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       }
       
       const insertResult = await collection.replaceOne(
-        { _id: 'test-venue' },
+        { _id: 'test-venue' } as any,
         testDoc,
         { upsert: true }
       )
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
       // Test actual insertion
       const collection = db.collection('seatmaps')
       const result = await collection.replaceOne(
-        { _id: venueId },
+        { _id: venueId } as any,
         hamiltonSeatMap,
         { upsert: true }
       )
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
       console.log('✅ Hamilton seat map inserted:', result)
       
       // Verify the data was inserted
-      const inserted = await collection.findOne({ _id: venueId })
+      const inserted = await collection.findOne({ _id: venueId } as any)
       console.log('✅ Hamilton seat map verified:', inserted ? 'Found' : 'Not found')
       
       return NextResponse.json({
