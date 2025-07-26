@@ -102,35 +102,21 @@ struct HomeView: View {
 // MARK: - Expo-Style Show Card Component
 struct ShowCardExpo: View {
     let show: Show
-    @State private var showingComingSoon = false
     
     var body: some View {
         Group {
             if isHamiltonShow {
-                // Hamilton: Full card wrapped in NavigationLink for complete clickability
+                // Hamilton: Keep intact as reference implementation
                 NavigationLink(destination: HamiltonSeatMapView()) {
                     showCardContent
                 }
                 .buttonStyle(PlainButtonStyle())
-            } else if isLionKingShow {
-                // Lion King: Full card wrapped in NavigationLink for complete clickability
-                NavigationLink(destination: LionKingSeatMapView()) {
-                    showCardContent
-                }
-                .buttonStyle(PlainButtonStyle())
             } else {
-                // Other shows: Full card clickable with coming soon alert
-                Button(action: {
-                    showingComingSoon = true
-                }) {
+                // All other shows: Use UniversalSeatMapView with dynamic theming
+                NavigationLink(destination: UniversalSeatMapView(show: show)) {
                     showCardContent
                 }
                 .buttonStyle(PlainButtonStyle())
-                .alert("Coming Soon", isPresented: $showingComingSoon) {
-                    Button("OK") { }
-                } message: {
-                    Text("\(show.title) will be available soon. Check back tomorrow!")
-                }
             }
         }
     }
@@ -140,11 +126,9 @@ struct ShowCardExpo: View {
         show.title.lowercased().contains("hamilton")
     }
     
-    private var isLionKingShow: Bool {
-        show.title.lowercased().contains("lion king") || 
-        show.title.lowercased().contains("lionking") ||
-        show.title.lowercased().contains("the lion king")
-    }
+    // Remove Lion King and Phantom specific detection - will use generic system
+    // private var isLionKingShow: Bool { ... } // REMOVED
+    // private var isPhantomShow: Bool { ... }   // REMOVED
     
     private var showCardContent: some View {
         VStack(spacing: 0) {

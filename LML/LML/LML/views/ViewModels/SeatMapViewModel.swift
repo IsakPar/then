@@ -38,7 +38,7 @@ class SeatMapViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     // Payment configuration
-    private var paymentSheet: PaymentSheet?
+    var paymentSheet: PaymentSheet?
     private var paymentIntentClientSecret: String?
     private var currentShowId: String = "hamilton-victoria-palace"
     
@@ -73,6 +73,54 @@ class SeatMapViewModel: ObservableObject {
         authState.isAuthenticated
     }
     
+    // MARK: - Display Properties for UI
+    
+    var selectedSeatsText: String {
+        let seats = selectedSeats.map { "\($0.row)\($0.number)" }
+        return seats.joined(separator: ", ")
+    }
+    
+    var totalPriceText: String {
+        let pounds = Double(totalPrice) / 100.0
+        return String(format: "£%.2f", pounds)
+    }
+    
+    // MARK: - Helper Functions for Dynamic Content
+    
+    private func getShowTitle() -> String {
+        return currentShow?.title ?? "Unknown Show"
+    }
+    
+    private func getFormattedDate() -> String {
+        if let currentShowTime = currentShowTime {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            return formatter.string(from: currentShowTime.startTime)
+        }
+        return selectedDate ?? "TBD"
+    }
+    
+    private func getFormattedTime() -> String {
+        if let currentShowTime = currentShowTime {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            return formatter.string(from: currentShowTime.startTime)
+        }
+        return selectedTime ?? "19:30"
+    }
+    
+    private func getVenueName() -> String {
+        return currentVenue?.name ?? currentShow?.venue.name ?? "Unknown Venue"
+    }
+    
+    // MARK: - Seat Selection Actions
+    
+    func clearSelection() {
+        for index in allSeats.indices {
+            allSeats[index].isSelected = false
+        }
+    }
+    
     // MARK: - Show Context Management
     
     /// Set the show context for dynamic email content
@@ -97,82 +145,6 @@ class SeatMapViewModel: ObservableObject {
         )
         
         print("🎭 Show context set: \(showTitle) at \(venueName) on \(date) at \(time)")
-    }
-    
-    /// Get dynamic show title for emails
-    private func getShowTitle() -> String {
-        // Try to extract show name from show ID
-        if currentShowId.contains("hamilton") {
-            return "Hamilton"
-        } else if currentShowId.contains("lion-king") {
-            return "The Lion King"
-        } else if currentShowId.contains("phantom") {
-            return "The Phantom of the Opera"
-        } else if currentShowId.contains("chicago") {
-            return "Chicago"
-        } else if currentShowId.contains("mamma-mia") {
-            return "Mamma Mia!"
-        } else if currentShowId.contains("wicked") {
-            return "Wicked"
-        }
-        
-        // Fallback to generic title
-        return "Your Show"
-    }
-    
-    /// Get dynamic venue name for emails
-    private func getVenueName() -> String {
-        if let venue = currentVenue {
-            return venue.name
-        }
-        
-        // Try to extract venue from show ID
-        if currentShowId.contains("victoria-palace") {
-            return "Victoria Palace Theatre"
-        } else if currentShowId.contains("lyceum") {
-            return "Lyceum Theatre"
-        } else if currentShowId.contains("phoenix") {
-            return "Phoenix Theatre"
-        }
-        
-        // Fallback to generic venue
-        return "Theatre"
-    }
-    
-    /// Get formatted date for emails
-    private func getFormattedDate() -> String {
-        if let selectedDate = selectedDate {
-            // Try to format the date if it's in a standard format
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            if let date = formatter.date(from: selectedDate) {
-                formatter.dateStyle = .long
-                return formatter.string(from: date)
-            }
-            return selectedDate
-        }
-        
-        // Use current date as fallback
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        return formatter.string(from: Date())
-    }
-    
-    /// Get formatted time for emails
-    private func getFormattedTime() -> String {
-        if let selectedTime = selectedTime {
-            // Try to format the time if it's in HH:mm format
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            if let time = formatter.date(from: selectedTime) {
-                formatter.timeStyle = .short
-                return formatter.string(from: time)
-            }
-            return selectedTime
-        }
-        
-        // Fallback to generic time
-        return "Evening Performance"
     }
     
     // MARK: - Seat Selection
@@ -237,6 +209,27 @@ class SeatMapViewModel: ObservableObject {
     }
     
     // MARK: - Payment Flow
+    
+    func onPaymentCompletion(_ result: PaymentSheetResult) {
+        switch result {
+        case .completed:
+            // Payment successful
+            showingPaymentSheet = false
+            showingSuccess = true
+            print("✅ Payment completed successfully")
+            
+        case .canceled:
+            // User canceled payment
+            showingPaymentSheet = false
+            print("⚠️ Payment canceled by user")
+            
+        case .failed(let error):
+            // Payment failed
+            showingPaymentSheet = false
+            errorMessage = "Payment failed: \(error.localizedDescription)"
+            print("❌ Payment failed: \(error)")
+        }
+    }
     
     func proceedToCheckout() {
         guard !selectedSeats.isEmpty else { return }
@@ -447,29 +440,73 @@ class SeatMapViewModel: ObservableObject {
     }
     
     func generateAllSeats() {
-        // 🎭 HAMILTON: Use hardcoded seat generation (502 seats total)
-        print("🎭 Generating Hamilton hardcoded seat map...")
-        allSeats = generateHardcodedSeats()
-        print("✅ Generated \(allSeats.count) hardcoded Hamilton seats")
+        // 🎭 DYNAMIC: Generate seats based on current show context
+        print("🎭 Generating seat map for show: \(currentShowId)")
+        
+        if currentShowId.contains("hamilton") {
+            // Hamilton: Use hardcoded seat generation (502 seats total)
+            print("🎭 Loading Hamilton hardcoded seat map...")
+            allSeats = generateHardcodedSeats()
+            print("✅ Generated \(allSeats.count) hardcoded Hamilton seats")
+        } else {
+            // Other shows: Load from JSON asynchronously
+            print("🎭 Loading JSON seat map for: \(currentShowId)")
+            Task {
+                await loadSeatMapFromJSON()
+            }
+            // Use empty seats initially, will be updated when JSON loads
+            allSeats = []
+        }
         
         // 🔒 Load previously booked seats from storage
         loadBookedSeats()
     }
     
     private func loadSeatMapFromJSON() async {
-        print("🎭 Loading seat map from JSON...")
+        print("🎭 Loading seat map from JSON for: \(currentShowId)")
         
-        // Try to load Lion King JSON for other shows
-        if let seats = await loadJSONSeats(filename: "lion-king-lyceum") {
+        // Determine JSON filename based on show ID
+        let filename: String
+        if currentShowId.contains("lion-king") || currentShowId.contains("lyceum") {
+            filename = "lion-king-lyceum"
+        } else if currentShowId.contains("phantom") {
+            filename = "phantom-opera-her-majesty"
+        } else {
+            // Default to Lion King for other shows
+            filename = "lion-king-lyceum"
+        }
+        
+        print("🗂️ Loading JSON file: \(filename)")
+        
+        if let seats = await loadJSONSeats(filename: filename) {
             await MainActor.run {
                 self.allSeats = seats
-                print("✅ Loaded Lion King seats: \(seats.count)")
+                print("✅ PRIMARY JSON LOAD SUCCESS:")
+                print("   📄 File: \(filename)")
+                print("   📊 Seats loaded: \(seats.count)")
+                print("   🎭 Show: \(currentShowId)")
             }
         } else {
-            // Fallback to hardcoded seats
-            await MainActor.run {
-                self.allSeats = self.generateHardcodedSeats()
-                print("⚠️ Using hardcoded seats as fallback")
+            print("❌ PRIMARY JSON LOAD FAILED: \(filename)")
+            print("🔄 Trying Lion King fallback...")
+            if let fallbackSeats = await loadJSONSeats(filename: "lion-king-lyceum") {
+                await MainActor.run {
+                    self.allSeats = fallbackSeats
+                    print("✅ FALLBACK JSON LOAD SUCCESS:")
+                    print("   📄 File: lion-king-lyceum")
+                    print("   📊 Seats loaded: \(fallbackSeats.count)")
+                    print("   🎭 Show: \(currentShowId) (using Lion King layout)")
+                }
+            } else {
+                print("❌ FALLBACK JSON LOAD FAILED")
+                print("🆘 Using hardcoded Hamilton seats as final fallback")
+                // Final fallback to hardcoded seats
+                await MainActor.run {
+                    self.allSeats = self.generateHardcodedSeats()
+                    print("✅ HARDCODED FALLBACK:")
+                    print("   📊 Seats generated: \(self.allSeats.count)")
+                    print("   🎭 Show: \(currentShowId) (using Hamilton hardcoded)")
+                }
             }
         }
     }
@@ -489,6 +526,7 @@ class SeatMapViewModel: ObservableObject {
             return nil
         }
     }
+
     
     private func convertJSONToTheaterSeats(_ jsonSeatMap: JSONSeatMap) -> [TheaterSeat] {
         var theaterSeats: [TheaterSeat] = []
@@ -500,20 +538,15 @@ class SeatMapViewModel: ObservableObject {
             
             let theaterSection = mapJSONSectionToTheaterSection(jsonSection.id)
             
-            // 🔧 CRITICAL FIX: Apply same Y-axis flip and coordinate scaling as Lion King
+            // ✅ CORRECT COORDINATE TRANSFORMATION: JSON viewport (1000x800) → Canvas viewport (1000x800)
             let jsonX = jsonSeat.position.x
             let jsonY = jsonSeat.position.y
             
-            // Step 1: Flip Y-axis (JSON Y=685 becomes iOS Y=115)
-            let flippedY = 800.0 - jsonY
-            
-            // Step 2: Scale coordinates to better fill canvas
-            let scaledX = 100 + ((jsonX - 100) * 800 / 600)  // Scale X from 600px to 800px range
-            let scaledY = 100 + ((flippedY - 115) * 600 / 485)  // Scale Y to use more vertical space
-            
-            // Clamp to viewport bounds for safety
-            let finalX = max(50, min(950, scaledX))
-            let finalY = max(50, min(750, scaledY))
+            // Simple Y-axis flip: JSON uses SVG coordinates (Y=0 at top), iOS uses Y=0 at bottom
+            // JSON Y=685 (orchestra front) → iOS Y=115 (near bottom)
+            // JSON Y=150 (boxes) → iOS Y=650 (near top)
+            let finalX = jsonX
+            let finalY = 800.0 - jsonY
             
             let theaterSeat = TheaterSeat(
                 id: jsonSeat.id,
@@ -532,7 +565,32 @@ class SeatMapViewModel: ObservableObject {
             theaterSeats.append(theaterSeat)
         }
         
-        print("✅ Converted \(theaterSeats.count) JSON seats to TheaterSeat models with coordinate transformation")
+        // 📊 COMPREHENSIVE SEAT LOADING REPORT
+        let sectionCounts = Dictionary(grouping: theaterSeats, by: { $0.section })
+            .mapValues { $0.count }
+        let rowCounts = Dictionary(grouping: theaterSeats, by: { "\($0.section)-Row\($0.row)" })
+            .mapValues { $0.count }
+        
+        print("✅ SEAT CONVERSION COMPLETE:")
+        print("   📊 Total seats loaded: \(theaterSeats.count)")
+        print("   🎭 Sections: \(sectionCounts)")
+        print("   📝 Rows: \(rowCounts.keys.sorted())")
+        print("   🎯 Position range: X(\(Int(theaterSeats.map{$0.x}.min() ?? 0))-\(Int(theaterSeats.map{$0.x}.max() ?? 0))) Y(\(Int(theaterSeats.map{$0.y}.min() ?? 0))-\(Int(theaterSeats.map{$0.y}.max() ?? 0)))")
+        
+        // 🔍 DETAILED ROW ANALYSIS for debugging
+        let premiumSeats = theaterSeats.filter { $0.section == .premium }
+        let rowData = Dictionary(grouping: premiumSeats, by: { $0.row })
+            .mapValues { seats in
+                (count: seats.count, yPos: seats.first?.y ?? 0)
+            }
+            .sorted { $0.key < $1.key }
+        
+        print("   🎭 Orchestra/Premium rows:")
+        for (row, data) in rowData {
+            let rowLetter = String(UnicodeScalar(64 + row)!) // 1->A, 2->B, etc.
+            print("      Row \(rowLetter): \(data.count) seats at Y=\(Int(data.yPos))")
+        }
+        
         return theaterSeats
     }
     

@@ -260,6 +260,61 @@ export const hardcodedSeatMappings = pgTable('hardcoded_seat_mappings', {
   showHardcodedId: index('idx_mappings_show_hardcoded').on(table.showId, table.hardcodedSeatId),
 }));
 
+// MARK: - Theme Management Table
+export const themes = pgTable('themes', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  
+  // Core branding colors
+  primaryColor: text('primary_color').notNull(),
+  accentColor: text('accent_color').notNull(),
+  backgroundGradient: text('background_gradient').notNull(), // JSON string
+  iconName: text('icon_name').notNull(),
+  
+  // Advanced styling (JSON objects)
+  textColors: text('text_colors'), // JSON: {header, secondary, button, etc.}
+  buttonStyles: text('button_styles'), // JSON: {background, text, border, etc.}
+  seatColors: text('seat_colors'), // JSON: {available, selected, unavailable, etc.}
+  
+  // Theme application scope
+  venueId: text('venue_id').references(() => venues.id), // Venue-specific theme
+  showId: text('show_id').references(() => shows.id),    // Show-specific theme
+  category: text('category'), // Category default (musical, comedy, drama, etc.)
+  
+  // Metadata
+  isActive: boolean('is_active').default(true),
+  createdBy: text('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  
+  // A/B testing support
+  testGroup: text('test_group'), // 'control', 'variant_a', 'variant_b'
+  testPercentage: integer('test_percentage').default(100), // % of users who see this theme
+})
+
+// Theme application hierarchy: Show-specific > Venue-specific > Category default > Generic
+export const themeApplications = pgTable('theme_applications', {
+  id: text('id').primaryKey(),
+  themeId: text('theme_id').references(() => themes.id),
+  
+  // Target scope
+  showId: text('show_id').references(() => shows.id),
+  venueId: text('venue_id').references(() => venues.id),
+  category: text('category'),
+  
+  // Scheduling
+  activeFrom: timestamp('active_from').defaultNow(),
+  activeTo: timestamp('active_to'),
+  
+  // A/B testing
+  testName: text('test_name'),
+  testVariant: text('test_variant'),
+  targetPercentage: integer('target_percentage').default(100),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})
+
 // ============================================================================
 // RELATIONS
 // ============================================================================

@@ -23,18 +23,17 @@ class DataService: DataServiceProtocol {
     
     private let apiClient = APIClient.shared
     private let cacheService = CacheService.shared
-    private let config = AppConfiguration.shared
     
     private init() {}
     
     // MARK: - Shows
     
     func getShows() async throws -> [Show] {
-        if config.shouldUseMockData {
-            return generateMockShows()
-        }
+        // For now, always use mock data until API integration is complete
+        return generateMockShows()
         
-        // First try to get fresh data from API
+        // Future API integration:
+        /*
         do {
             let shows = try await apiClient.getShows()
             await cacheService.cacheShows(shows)
@@ -58,13 +57,18 @@ class DataService: DataServiceProtocol {
             print("⚠️ No cached data available, using mock data as fallback")
             return generateMockShows()
         }
+        */
     }
     
     func getShow(id: String) async throws -> Show {
-        if config.shouldUseMockData {
-            return generateMockShows().first { $0.id == id } ?? generateMockShows().first!
+        let allShows = generateMockShows()
+        guard let show = allShows.first(where: { $0.id == id }) else {
+            throw DataError.notFound
         }
+        return show
         
+        // Future API integration:
+        /*
         do {
             let show = try await apiClient.getShow(id: id)
             await cacheService.cacheShow(show)
@@ -76,6 +80,7 @@ class DataService: DataServiceProtocol {
             }
             throw error
         }
+        */
     }
     
     func searchShows(query: String) async throws -> [Show] {
@@ -95,10 +100,10 @@ class DataService: DataServiceProtocol {
     // MARK: - Tickets
     
     func getUserTickets() async throws -> [Ticket] {
-        if config.shouldUseMockData {
-            return generateMockTickets()
-        }
+        return generateMockTickets()
         
+        // Future API integration:
+        /*
         do {
             let tickets = try await apiClient.getUserTickets()
             await cacheService.cacheTickets(tickets)
@@ -110,14 +115,15 @@ class DataService: DataServiceProtocol {
             }
             throw error
         }
+        */
     }
     
     // MARK: - Mock Data Generation (Development Only)
     
     private func generateMockShows() -> [Show] {
-        // 🎭 INVESTOR DEMO: Always allow Hamilton and Lion King for demos
-        // Production backend connection + investor demo shows
-        print("🎭 Generating investor demo shows (Hamilton & Lion King)...")
+        // 🎭 MOCK DATA: Hamilton, Phantom, and Lion King for development
+        // Updated to include all live shows for testing
+        print("🎭 Generating mock shows (Hamilton, Phantom & Lion King)...")
         
         let venues = generateMockVenues()
         let calendar = Calendar.current
@@ -152,6 +158,41 @@ class DataService: DataServiceProtocol {
                         endTime: calendar.date(byAdding: .day, value: 1, to: calendar.date(byAdding: .hour, value: 3, to: now)!)!,
                         isAvailable: true,
                         availableSeats: 229
+                    )
+                ],
+                seatMap: nil,
+                isActive: true,
+                createdAt: now,
+                updatedAt: now
+            ),
+            Show(
+                id: "phantom-her-majestys",
+                title: "The Phantom of the Opera",
+                venue: venues[2],
+                description: "The world's longest-running musical",
+                imageURL: "phantom.jpg",
+                category: .musical,
+                duration: 2.5 * 3600, // 2h 30m
+                ageRating: "PG",
+                pricing: PricingInfo(
+                    currency: "GBP",
+                    minPrice: 3500, // £35
+                    maxPrice: 12000, // £120
+                    sections: [
+                        PriceSection(name: "Premium Orchestra", price: 12000, availableSeats: 45, totalSeats: 120),
+                        PriceSection(name: "Standard Orchestra", price: 7500, availableSeats: 180, totalSeats: 250),
+                        PriceSection(name: "Dress Circle", price: 6000, availableSeats: 95, totalSeats: 180),
+                        PriceSection(name: "Upper Circle", price: 3500, availableSeats: 220, totalSeats: 280)
+                    ]
+                ),
+                schedule: [
+                    ShowTime(
+                        id: "phantom-1",
+                        showId: "phantom-her-majestys",
+                        startTime: calendar.date(byAdding: .day, value: 1, to: now)!,
+                        endTime: calendar.date(byAdding: .day, value: 1, to: calendar.date(byAdding: .hour, value: 3, to: now)!)!,
+                        isAvailable: true,
+                        availableSeats: 540
                     )
                 ],
                 seatMap: nil,
@@ -234,12 +275,30 @@ class DataService: DataServiceProtocol {
                     signLanguageAvailable: false
                 ),
                 facilities: ["Bar", "Ice Cream", "Gift Shop"]
+            ),
+            Venue(
+                id: "her-majestys-theatre",
+                name: "Her Majesty's Theatre",
+                address: Address(
+                    street: "Haymarket",
+                    city: "London",
+                    postcode: "SW1Y 4QL",
+                    country: "UK"
+                ),
+                capacity: 1216,
+                accessibility: AccessibilityInfo(
+                    wheelchairAccessible: true,
+                    hearingLoopAvailable: true,
+                    audioDescriptionAvailable: true,
+                    signLanguageAvailable: false
+                ),
+                facilities: ["Bar", "Restaurant", "Gift Shop", "Historical Tours"]
             )
         ]
     }
     
     private func generateMockTickets() -> [Ticket] {
-        guard !config.isProductionBuild else { return [] }
+        guard !AppConfiguration.shared.isProductionBuild else { return [] }
         
         let calendar = Calendar.current
         let now = Date()
