@@ -81,31 +81,50 @@ export async function GET(request: NextRequest) {
 }
 
 function convertToIOSFormat(mongoSeatMap: any, venueName: string) {
-  // Extract venue and layout info
-  const layout = mongoSeatMap.shows[Object.keys(mongoSeatMap.shows)[0]]
-  const { width, height, centerX, centerY, stageArea } = layout.layout
+  console.log('🔄 Converting MongoDB format to iOS format...')
+  
+  // Extract venue and layout info from MongoDB structure
+  const showKeys = Object.keys(mongoSeatMap.shows || {})
+  if (showKeys.length === 0) {
+    throw new Error('No shows found in seat map data')
+  }
+  
+  const showData = mongoSeatMap.shows[showKeys[0]]
+  if (!showData.layout) {
+    throw new Error('No layout found in show data')
+  }
+  
+  const { width = 1000, height = 600, centerX = 500, centerY = 300, stageArea } = showData.layout
   
   // Convert MongoDB sections to iOS seats array
   const seats: any[] = []
   
-  Object.entries(layout.sections).forEach(([sectionId, section]: [string, any]) => {
-    section.seats.forEach((seat: any) => {
-      seats.push({
-        id: seat.id,
-        sectionId: sectionId,
-        row: seat.row,
-        number: seat.number,
-        position: {
-          x: seat.position.x,
-          y: seat.position.y
-        },
-        status: seat.availability || 'available',
-        pricePence: seat.pricing?.pence || 8500,
-        accessibility: seat.accessibility || false,
-        seatType: seat.category || 'standard'
-      })
+  if (showData.sections) {
+    Object.entries(showData.sections).forEach(([sectionId, section]: [string, any]) => {
+      if (section.seats && Array.isArray(section.seats)) {
+        section.seats.forEach((seat: any) => {
+          seats.push({
+            id: seat.hardcodedId || seat.id,
+            sectionId: sectionId,
+            row: seat.row,
+            number: seat.number,
+            position: {
+              x: seat.x,
+              y: seat.y
+            },
+            status: 'available',
+            pricePence: seat.seatType === 'premium' ? 15000 : 
+                       seat.seatType === 'box' ? 20000 : 
+                       seat.seatType === 'grand' ? 25000 : 8500,
+            accessibility: seat.isAccessible || false,
+            seatType: seat.seatType || 'standard'
+          })
+        })
+      }
     })
-  })
+  }
+
+  console.log(`✅ Converted ${seats.length} seats from ${Object.keys(showData.sections || {}).length} sections`)
 
   // Create iOS-compatible venue layout
   return {
@@ -132,7 +151,7 @@ function convertToIOSFormat(mongoSeatMap: any, venueName: string) {
       borderColor: '#333333'
     },
     aisles: generateAisles(width, height, centerX, centerY),
-    sectionLabels: generateSectionLabels(layout.sections, width, height),
+    sectionLabels: generateSectionLabels(showData.sections || {}, width, height),
     accessibilitySpots: [],
     seats
   }
@@ -171,25 +190,29 @@ function generateSectionLabels(sections: any, width: number, height: number) {
   const labels: any[] = []
   let yOffset = 120
   
-  Object.entries(sections).forEach(([sectionId, section]: [string, any]) => {
-    const seatCount = section.seats.length
-    const name = section.name || sectionId.replace(/([A-Z])/g, ' $1').trim()
-    
-    labels.push({
-      id: `${sectionId}-label`,
-      text: `${name.toUpperCase()} (${seatCount} seats)`,
-      position: {
-        x: width / 2,
-        y: yOffset
-      },
-      fontSize: 16,
-      colorHex: section.color || '#FFD700',
-      fontWeight: 'bold',
-      alignment: 'center'
+  if (sections && typeof sections === 'object') {
+    Object.entries(sections).forEach(([sectionId, section]: [string, any]) => {
+      if (section && section.seats && Array.isArray(section.seats)) {
+        const seatCount = section.seats.length
+        const name = section.name || sectionId.replace(/([A-Z])/g, ' $1').trim()
+        
+        labels.push({
+          id: `${sectionId}-label`,
+          text: `${name.toUpperCase()} (${seatCount} seats)`,
+          position: {
+            x: width / 2,
+            y: yOffset
+          },
+          fontSize: 16,
+          colorHex: section.color || '#FFD700',
+          fontWeight: 'bold',
+          alignment: 'center'
+        })
+        
+        yOffset += 200 // Space out labels vertically
+      }
     })
-    
-    yOffset += 200 // Space out labels vertically
-  })
+  }
   
   return labels
 } 
