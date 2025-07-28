@@ -18,7 +18,7 @@ struct UniversalSeatMapView: View {
     @Environment(\.dismiss) private var dismiss
     
     // Dynamic configuration based on show data
-    private let theaterConfig = TheaterConfig()
+    // PHASE 3: TheaterConfig removed - all configuration now from JSON venue layout
     @State private var theme: ShowTheme
     @State private var isLoadingTheme = false
     
@@ -37,7 +37,7 @@ struct UniversalSeatMapView: View {
                 VStack(spacing: 0) {
                     dynamicHeaderSection
                     
-                    SeatMapCanvas(viewModel: viewModel, theaterConfig: theaterConfig)
+                    SeatMapCanvas(viewModel: viewModel)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     
                     dynamicBottomControlsSection

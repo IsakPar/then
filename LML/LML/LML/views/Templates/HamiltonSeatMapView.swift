@@ -15,7 +15,7 @@ struct HamiltonSeatMapView: View {
     @StateObject private var viewModel = SeatMapViewModel()
     @Environment(\.dismiss) private var dismiss
     
-    private let theaterConfig = TheaterConfig()
+    // PHASE 3: TheaterConfig removed - all configuration now from JSON venue layout
     
     var body: some View {
         GeometryReader { geometry in
@@ -25,7 +25,7 @@ struct HamiltonSeatMapView: View {
                 VStack(spacing: 0) {
                     headerSection
                     
-                    SeatMapCanvas(viewModel: viewModel, theaterConfig: theaterConfig)
+                    SeatMapCanvas(viewModel: viewModel)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     
                     bottomControlsSection

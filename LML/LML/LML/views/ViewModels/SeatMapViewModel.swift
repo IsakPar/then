@@ -26,6 +26,11 @@ class SeatMapViewModel: ObservableObject {
     @Published var bookedSeats: [BookedSeat] = []
     @Published var bookingReference: String = ""
     
+    // PHASE 2: JSON-Driven Venue Layout Support
+    @Published var venueLayout: VenueLayout?
+    @Published var isLoadingVenueLayout = false
+    @Published var venueLayoutError: String?
+    
     // Show context for dynamic email content
     private var currentShow: Show?
     private var currentShowTime: ShowTime?
@@ -426,186 +431,96 @@ class SeatMapViewModel: ObservableObject {
     
     // MARK: - Seat Map Loading
     
-    private func generateHardcodedSeats() -> [TheaterSeat] {
-        print("🔧 Generating hardcoded seats as fallback...")
-        var seats: [TheaterSeat] = []
-        
-        for section in TheaterSection.allCases {
-            let sectionSeats = generateSeatsForSection(section)
-            seats.append(contentsOf: sectionSeats)
-        }
-        
-        print("✅ Generated \(seats.count) hardcoded seats across \(TheaterSection.allCases.count) sections")
-        return seats
-    }
+    // PHASE 3: Hardcoded seat generation removed - now 100% JSON-driven
     
     func generateAllSeats() {
-        // 🎭 DYNAMIC: Generate seats based on current show context
-        print("🎭 Generating seat map for show: \(currentShowId)")
+        // 🎭 PHASE 2: Always use JSON-driven venue layout loading
+        print("🎭 Loading venue layout for show: \(currentShowId)")
         
-        if currentShowId.contains("hamilton") {
-            // Hamilton: Use hardcoded seat generation (502 seats total)
-            print("🎭 Loading Hamilton hardcoded seat map...")
-            allSeats = generateHardcodedSeats()
-            print("✅ Generated \(allSeats.count) hardcoded Hamilton seats")
-        } else {
-            // Other shows: Load from JSON asynchronously
-            print("🎭 Loading JSON seat map for: \(currentShowId)")
-            Task {
-                await loadSeatMapFromJSON()
-            }
-            // Use empty seats initially, will be updated when JSON loads
-            allSeats = []
-        }
-        
-        // 🔒 Load previously booked seats from storage
-        loadBookedSeats()
-    }
-    
-    private func loadSeatMapFromJSON() async {
-        print("🎭 Loading seat map from JSON for: \(currentShowId)")
-        
-        // Determine JSON filename based on show ID
-        let filename: String
-        if currentShowId.contains("lion-king") || currentShowId.contains("lyceum") {
-            filename = "lion-king-lyceum"
-        } else if currentShowId.contains("phantom") {
-            filename = "phantom-opera-her-majesty"
-        } else {
-            // Default to Lion King for other shows
-            filename = "lion-king-lyceum"
-        }
-        
-        print("🗂️ Loading JSON file: \(filename)")
-        
-        if let seats = await loadJSONSeats(filename: filename) {
+        Task {
+            await loadVenueLayout()
             await MainActor.run {
-                self.allSeats = seats
-                print("✅ PRIMARY JSON LOAD SUCCESS:")
+                // 🔒 Load previously booked seats from storage after venue loads
+                loadBookedSeats()
+            }
+        }
+        
+        // Use empty seats initially, will be updated when venue layout loads
+        allSeats = []
+    }
+    
+    // MARK: - PHASE 2: JSON-Driven Venue Layout Loading
+    
+    func loadVenueLayout() async {
+        await MainActor.run {
+            isLoadingVenueLayout = true
+            venueLayoutError = nil
+        }
+        
+        print("🎭 Loading complete venue layout for: \(currentShowId)")
+        
+        // Determine venue filename based on show ID
+        let filename: String
+        if currentShowId.contains("hamilton") || currentShowId.contains("victoria") {
+            filename = "victoria-palace-complete"
+        } else if currentShowId.contains("phantom") || currentShowId.contains("her-majesty") {
+            filename = "her-majestys-theatre-complete"
+        } else if currentShowId.contains("lion-king") || currentShowId.contains("lyceum") {
+            filename = "royal-albert-hall-circular" // Use as Lion King test
+        } else {
+            // Default to Victoria Palace
+            filename = "victoria-palace-complete"
+        }
+        
+        print("🗂️ Loading venue layout file: \(filename)")
+        
+        if let layout = await loadVenueLayoutFromJSON(filename: filename) {
+            await MainActor.run {
+                self.venueLayout = layout
+                // Convert layout seats to existing TheaterSeat format for compatibility
+                if !layout.seats.isEmpty {
+                    self.allSeats = layout.convertToTheaterSeats()
+                }
+                self.isLoadingVenueLayout = false
+                print("✅ VENUE LAYOUT LOAD SUCCESS:")
                 print("   📄 File: \(filename)")
-                print("   📊 Seats loaded: \(seats.count)")
-                print("   🎭 Show: \(currentShowId)")
+                print("   🏛️ Venue: \(layout.venue.name)")
+                print("   📐 Viewport: \(Int(layout.venue.viewport.width))x\(Int(layout.venue.viewport.height))")
+                print("   🎭 Stage: \(layout.stage?.title ?? "None")")
+                print("   🛤️ Aisles: \(layout.aisles.count)")
+                print("   🏷️ Labels: \(layout.sectionLabels.count)")
+                print("   ♿ Accessibility: \(layout.accessibilitySpots.count)")
+                print("   🪑 Seats: \(layout.seats.count)")
             }
         } else {
-            print("❌ PRIMARY JSON LOAD FAILED: \(filename)")
-            print("🔄 Trying Lion King fallback...")
-            if let fallbackSeats = await loadJSONSeats(filename: "lion-king-lyceum") {
-                await MainActor.run {
-                    self.allSeats = fallbackSeats
-                    print("✅ FALLBACK JSON LOAD SUCCESS:")
-                    print("   📄 File: lion-king-lyceum")
-                    print("   📊 Seats loaded: \(fallbackSeats.count)")
-                    print("   🎭 Show: \(currentShowId) (using Lion King layout)")
-                }
-            } else {
-                print("❌ FALLBACK JSON LOAD FAILED")
-                print("🆘 Using hardcoded Hamilton seats as final fallback")
-                // Final fallback to hardcoded seats
-                await MainActor.run {
-                    self.allSeats = self.generateHardcodedSeats()
-                    print("✅ HARDCODED FALLBACK:")
-                    print("   📊 Seats generated: \(self.allSeats.count)")
-                    print("   🎭 Show: \(currentShowId) (using Hamilton hardcoded)")
-                }
+            print("❌ VENUE LAYOUT LOAD FAILED: \(filename)")
+            // PHASE 3: No hardcoded fallbacks - venue layout is required
+            await MainActor.run {
+                self.isLoadingVenueLayout = false
+                self.venueLayoutError = "Failed to load venue layout: \(filename)"
+                self.allSeats = [] // No seats without valid venue layout
             }
         }
     }
     
-    private func loadJSONSeats(filename: String) async -> [TheaterSeat]? {
+    private func loadVenueLayoutFromJSON(filename: String) async -> VenueLayout? {
         guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
-            print("❌ JSON file not found: \(filename)")
+            print("❌ Venue layout file not found: \(filename)")
             return nil
         }
         
         do {
             let data = try Data(contentsOf: url)
-            let jsonSeatMap = try JSONDecoder().decode(JSONSeatMap.self, from: data)
-            return convertJSONToTheaterSeats(jsonSeatMap)
+            let layout = try JSONDecoder().decode(VenueLayout.self, from: data)
+            
+            // Validate the layout
+            try layout.validate()
+            print("✅ Venue layout validation passed for \(filename)")
+            
+            return layout
         } catch {
-            print("❌ Failed to decode JSON \(filename): \(error.localizedDescription)")
+            print("❌ Failed to decode or validate venue layout \(filename): \(error.localizedDescription)")
             return nil
-        }
-    }
-
-    
-    private func convertJSONToTheaterSeats(_ jsonSeatMap: JSONSeatMap) -> [TheaterSeat] {
-        var theaterSeats: [TheaterSeat] = []
-        
-        for jsonSeat in jsonSeatMap.seats {
-            guard let jsonSection = jsonSeatMap.sections.first(where: { $0.id == jsonSeat.sectionId }) else {
-                continue
-            }
-            
-            let theaterSection = mapJSONSectionToTheaterSection(jsonSection.id)
-            
-            // ✅ CORRECT COORDINATE TRANSFORMATION: JSON viewport (1000x800) → Canvas viewport (1000x800)
-            let jsonX = jsonSeat.position.x
-            let jsonY = jsonSeat.position.y
-            
-            // Simple Y-axis flip: JSON uses SVG coordinates (Y=0 at top), iOS uses Y=0 at bottom
-            // JSON Y=685 (orchestra front) → iOS Y=115 (near bottom)
-            // JSON Y=150 (boxes) → iOS Y=650 (near top)
-            let finalX = jsonX
-            let finalY = 800.0 - jsonY
-            
-            let theaterSeat = TheaterSeat(
-                id: jsonSeat.id,
-                section: theaterSection,
-                row: parseRowNumber(jsonSeat.row),
-                number: jsonSeat.number,
-                price: jsonSeat.pricePence,
-                isAvailable: jsonSeat.status == "available",
-                isSelected: false,
-                x: finalX,
-                y: finalY,
-                width: 30.0,
-                height: 30.0
-            )
-            
-            theaterSeats.append(theaterSeat)
-        }
-        
-        // 📊 COMPREHENSIVE SEAT LOADING REPORT
-        let sectionCounts = Dictionary(grouping: theaterSeats, by: { $0.section })
-            .mapValues { $0.count }
-        let rowCounts = Dictionary(grouping: theaterSeats, by: { "\($0.section)-Row\($0.row)" })
-            .mapValues { $0.count }
-        
-        print("✅ SEAT CONVERSION COMPLETE:")
-        print("   📊 Total seats loaded: \(theaterSeats.count)")
-        print("   🎭 Sections: \(sectionCounts)")
-        print("   📝 Rows: \(rowCounts.keys.sorted())")
-        print("   🎯 Position range: X(\(Int(theaterSeats.map{$0.x}.min() ?? 0))-\(Int(theaterSeats.map{$0.x}.max() ?? 0))) Y(\(Int(theaterSeats.map{$0.y}.min() ?? 0))-\(Int(theaterSeats.map{$0.y}.max() ?? 0)))")
-        
-        // 🔍 DETAILED ROW ANALYSIS for debugging
-        let premiumSeats = theaterSeats.filter { $0.section == .premium }
-        let rowData = Dictionary(grouping: premiumSeats, by: { $0.row })
-            .mapValues { seats in
-                (count: seats.count, yPos: seats.first?.y ?? 0)
-            }
-            .sorted { $0.key < $1.key }
-        
-        print("   🎭 Orchestra/Premium rows:")
-        for (row, data) in rowData {
-            let rowLetter = String(UnicodeScalar(64 + row)!) // 1->A, 2->B, etc.
-            print("      Row \(rowLetter): \(data.count) seats at Y=\(Int(data.yPos))")
-        }
-        
-        return theaterSeats
-    }
-    
-    private func mapJSONSectionToTheaterSection(_ sectionId: String) -> TheaterSection {
-        switch sectionId.lowercased() {
-        case "stalls", "orchestra":
-            return .premium
-        case "dress-circle", "mezzanine", "circle":
-            return .middle
-        case "upper-circle", "balcony":
-            return .back
-        case "boxes":
-            return .sideA
-        default:
-            return .middle
         }
     }
     
@@ -620,94 +535,7 @@ class SeatMapViewModel: ObservableObject {
     
     // MARK: - Hardcoded Seat Generation (Fallback Only)
     
-    private func generateSeatsForSection(_ section: TheaterSection) -> [TheaterSeat] {
-        let config = getSectionConfig(section)
-        var seats: [TheaterSeat] = []
-        
-        // Special handling for back section with varying row configurations
-        if section == .back {
-            // Back section has varying number of seats per row, mimicking Victoria Palace layout
-            let backRowConfigs = [
-                (seats: 14, startX: 490),  // Row 1
-                (seats: 13, startX: 505),  // Row 2
-                (seats: 12, startX: 520),  // Row 3
-                (seats: 11, startX: 535),  // Row 4
-                (seats: 10, startX: 550),  // Row 5
-                (seats: 9, startX: 565),   // Row 6
-                (seats: 9, startX: 565),   // Row 7
-                (seats: 8, startX: 580),   // Row 8
-                (seats: 8, startX: 580),   // Row 9
-                (seats: 8, startX: 580)    // Row 10
-            ]
-            
-            for (rowIndex, rowConfig) in backRowConfigs.enumerated() {
-                let row = rowIndex + 1
-                for number in 1...rowConfig.seats {
-                    let seat = TheaterSeat(
-                        id: "\(section.rawValue)-\(row)-\(number)",
-                        section: section,
-                        row: row,
-                        number: number,
-                        price: config.price,
-                        isAvailable: true, // ✅ All seats available for booking
-                        isSelected: false,
-                        x: Double(rowConfig.startX) + Double((number - 1) * config.seatSpacing),
-                        y: config.baseY + Double((row - 1) * config.rowSpacing),
-                        width: 30.0,
-                        height: 30.0
-                    )
-                    seats.append(seat)
-                }
-            }
-        } else {
-            // Standard uniform layout for all other sections
-            for row in 1...config.rows {
-                for number in 1...config.seatsPerRow {
-                    let seat = TheaterSeat(
-                        id: "\(section.rawValue)-\(row)-\(number)",
-                        section: section,
-                        row: row,
-                        number: number,
-                        price: config.price,
-                        isAvailable: true, // ✅ All seats available for booking
-                        isSelected: false,
-                        x: config.baseX + Double((number - 1) * config.seatSpacing),
-                        y: config.baseY + Double((row - 1) * config.rowSpacing),
-                        width: 30.0,
-                        height: 30.0
-                    )
-                    seats.append(seat)
-                }
-            }
-        }
-        
-        return seats
-    }
-    
-    private func getSectionConfig(_ section: TheaterSection) -> SectionConfig {
-        switch section {
-        case .premium:
-            // Premium Section - 150 seats (15 cols × 10 rows) - Front center, best seats
-            return SectionConfig(rows: 10, seatsPerRow: 15, baseX: 475, baseY: 190, 
-                               seatSpacing: 30, rowSpacing: 28, price: 15000)
-        case .sideA:
-            // Side Section A - 50 seats (5 cols × 10 rows) - Left side of theater
-            return SectionConfig(rows: 10, seatsPerRow: 5, baseX: 290, baseY: 220, 
-                               seatSpacing: 30, rowSpacing: 28, price: 5500)
-        case .middle:
-            // Middle Section - 150 seats (15 cols × 10 rows) - Center, behind premium
-            return SectionConfig(rows: 10, seatsPerRow: 15, baseX: 475, baseY: 500, 
-                               seatSpacing: 30, rowSpacing: 28, price: 8500)
-        case .sideB:
-            // Side Section B - 50 seats (5 cols × 10 rows) - Right side of theater  
-            return SectionConfig(rows: 10, seatsPerRow: 5, baseX: 970, baseY: 220, 
-                               seatSpacing: 30, rowSpacing: 28, price: 5500)
-        case .back:
-            // Back Section - 102 seats with varying row configuration - Back of theater
-            return SectionConfig(rows: 10, seatsPerRow: 12, baseX: 490, baseY: 820, 
-                               seatSpacing: 30, rowSpacing: 28, price: 3500)
-        }
-    }
+    // PHASE 3: Hardcoded section generation removed - seats now loaded from JSON venue layouts
     
     // MARK: - Private Methods
     
@@ -846,6 +674,40 @@ class SeatMapViewModel: ObservableObject {
         #endif
     }
     
+    // MARK: - PHASE 3: Venue Testing and Validation
+    
+    func testAllVenues() async {
+        print("🧪 PHASE 3: Testing all venue layouts...")
+        
+        let testVenues = [
+            ("hamilton-victoria-palace", "Victoria Palace Theatre"),
+            ("phantom-her-majesty", "Her Majesty's Theatre"),
+            ("lion-king-lyceum", "Royal Albert Hall (Test)")
+        ]
+        
+        for (showId, expectedVenue) in testVenues {
+            print("\n🎭 Testing venue: \(showId)")
+            let originalShowId = currentShowId
+            currentShowId = showId
+            
+            await loadVenueLayout()
+            
+            if let venue = venueLayout {
+                let success = venue.venue.name.contains(expectedVenue.split(separator: " ").first ?? "")
+                print("✅ \(showId): \(success ? "PASS" : "FAIL") - Loaded \(venue.venue.name)")
+                print("   📐 Viewport: \(Int(venue.venue.viewport.width))x\(Int(venue.venue.viewport.height))")
+                print("   🎭 Elements: Stage(\(venue.stage != nil ? "✓" : "✗")) Aisles(\(venue.aisles.count)) Labels(\(venue.sectionLabels.count)) Accessibility(\(venue.accessibilitySpots.count))")
+                print("   🪑 Seats: \(venue.seats.count)")
+            } else {
+                print("❌ \(showId): FAIL - No venue loaded")
+            }
+            
+            currentShowId = originalShowId
+        }
+        
+        print("\n🎉 PHASE 3 VENUE TESTING COMPLETE")
+    }
+    
     // MARK: - Email Integration
     
     /// Send booking confirmation email via Mailjet after successful payment
@@ -913,13 +775,4 @@ class SeatMapViewModel: ObservableObject {
     }
 }
 
-// MARK: - Supporting Models
-struct SectionConfig {
-    let rows: Int
-    let seatsPerRow: Int
-    let baseX: Double
-    let baseY: Double
-    let seatSpacing: Int
-    let rowSpacing: Int
-    let price: Int
-} 
+// PHASE 3: SectionConfig removed - venue layouts now defined in JSON 

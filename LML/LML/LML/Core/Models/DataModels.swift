@@ -429,7 +429,7 @@ struct SeatMapMetadata: Codable, Equatable {
     let availableSeats: Int
 }
 
-enum SeatType: String, Codable {
+enum SeatType: String, Codable, Equatable {
     case standard = "standard"
     case premium = "premium"
     case wheelchair = "wheelchair"

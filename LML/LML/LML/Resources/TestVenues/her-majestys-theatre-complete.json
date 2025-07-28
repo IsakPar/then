@@ -1,0 +1,389 @@
+{
+  "venue": {
+    "id": "her-majestys-theatre",
+    "name": "Her Majesty's Theatre",
+    "viewport": {
+      "width": 1200,
+      "height": 900
+    }
+  },
+  "stage": {
+    "id": "main-stage",
+    "position": {
+      "x": 600,
+      "y": 40
+    },
+    "dimensions": {
+      "width": 400,
+      "height": 50
+    },
+    "title": "STAGE",
+    "backgroundColor": "#1A1A1A",
+    "borderColor": "#333333"
+  },
+  "aisles": [
+    {
+      "id": "grand-center-aisle",
+      "position": {
+        "x": 600,
+        "y": 450
+      },
+      "dimensions": {
+        "width": 25,
+        "height": 500
+      },
+      "color": "#2A2A2A",
+      "opacity": 0.6,
+      "orientation": "vertical"
+    },
+    {
+      "id": "left-grand-aisle",
+      "position": {
+        "x": 350,
+        "y": 400
+      },
+      "dimensions": {
+        "width": 35,
+        "height": 400
+      },
+      "color": "#2A2A2A",
+      "opacity": 0.4,
+      "orientation": "vertical"
+    },
+    {
+      "id": "right-grand-aisle",
+      "position": {
+        "x": 850,
+        "y": 400
+      },
+      "dimensions": {
+        "width": 35,
+        "height": 400
+      },
+      "color": "#2A2A2A",
+      "opacity": 0.4,
+      "orientation": "vertical"
+    },
+    {
+      "id": "circle-separator",
+      "position": {
+        "x": 600,
+        "y": 350
+      },
+      "dimensions": {
+        "width": 500,
+        "height": 25
+      },
+      "color": "#2A2A2A",
+      "opacity": 0.3,
+      "orientation": "horizontal"
+    },
+    {
+      "id": "upper-circle-separator",
+      "position": {
+        "x": 600,
+        "y": 650
+      },
+      "dimensions": {
+        "width": 600,
+        "height": 30
+      },
+      "color": "#2A2A2A",
+      "opacity": 0.3,
+      "orientation": "horizontal"
+    }
+  ],
+  "sectionLabels": [
+    {
+      "id": "stalls-label",
+      "text": "STALLS (280 seats)",
+      "position": {
+        "x": 600,
+        "y": 120
+      },
+      "fontSize": 18,
+      "colorHex": "#FFD700",
+      "fontWeight": "bold",
+      "alignment": "center"
+    },
+    {
+      "id": "dress-circle-label",
+      "text": "DRESS CIRCLE (220 seats)",
+      "position": {
+        "x": 600,
+        "y": 380
+      },
+      "fontSize": 16,
+      "colorHex": "#E6E6FA",
+      "fontWeight": "bold",
+      "alignment": "center"
+    },
+    {
+      "id": "upper-circle-label",
+      "text": "UPPER CIRCLE (180 seats)",
+      "position": {
+        "x": 600,
+        "y": 680
+      },
+      "fontSize": 16,
+      "colorHex": "#ADD8E6",
+      "fontWeight": "bold",
+      "alignment": "center"
+    },
+    {
+      "id": "boxes-left-label",
+      "text": "BOXES",
+      "position": {
+        "x": 200,
+        "y": 250
+      },
+      "fontSize": 14,
+      "colorHex": "#DDA0DD",
+      "fontWeight": "medium",
+      "alignment": "center"
+    },
+    {
+      "id": "boxes-right-label",
+      "text": "BOXES",
+      "position": {
+        "x": 1000,
+        "y": 250
+      },
+      "fontSize": 14,
+      "colorHex": "#DDA0DD",
+      "fontWeight": "medium",
+      "alignment": "center"
+    }
+  ],
+  "accessibilitySpots": [
+    {
+      "id": "wc-stalls-left",
+      "position": {
+        "x": 250,
+        "y": 160
+      },
+      "type": "wheelchair"
+    },
+    {
+      "id": "wc-stalls-right",
+      "position": {
+        "x": 950,
+        "y": 160
+      },
+      "type": "wheelchair"
+    },
+    {
+      "id": "wc-dress-circle-center",
+      "position": {
+        "x": 600,
+        "y": 420
+      },
+      "type": "wheelchair"
+    },
+    {
+      "id": "companion-stalls",
+      "position": {
+        "x": 280,
+        "y": 160
+      },
+      "type": "companion"
+    },
+    {
+      "id": "hearing-loop-dress",
+      "position": {
+        "x": 750,
+        "y": 450
+      },
+      "type": "assistiveListening"
+    }
+  ],
+  "sections": [
+    {
+      "id": "stalls",
+      "name": "Stalls",
+      "displayName": "Stalls Level",
+      "colorHex": "#FF6B6B",
+      "capacity": 280,
+      "description": "Orchestra level premium seating",
+      "priceCategory": "premium"
+    },
+    {
+      "id": "dress-circle",
+      "name": "Dress Circle",
+      "displayName": "Dress Circle",
+      "colorHex": "#4ECDC4",
+      "capacity": 220,
+      "description": "First balcony level",
+      "priceCategory": "standard"
+    },
+    {
+      "id": "upper-circle",
+      "name": "Upper Circle",
+      "displayName": "Upper Circle",
+      "colorHex": "#45B7D1",
+      "capacity": 180,
+      "description": "Upper balcony seating",
+      "priceCategory": "value"
+    },
+    {
+      "id": "boxes-tier1",
+      "name": "Boxes Tier 1",
+      "displayName": "Private Boxes - Tier 1",
+      "colorHex": "#DDA0DD",
+      "capacity": 24,
+      "description": "Private box seating - first tier",
+      "priceCategory": "premium"
+    },
+    {
+      "id": "boxes-tier2",
+      "name": "Boxes Tier 2",
+      "displayName": "Private Boxes - Tier 2",
+      "colorHex": "#F0E68C",
+      "capacity": 16,
+      "description": "Private box seating - second tier",
+      "priceCategory": "standard"
+    }
+  ],
+  "seats": [
+    {
+      "id": "stalls-A-1",
+      "sectionId": "stalls",
+      "row": "A",
+      "number": 1,
+      "position": {
+        "x": 400,
+        "y": 150
+      },
+      "status": "available",
+      "pricePence": 18500,
+      "accessibility": false,
+      "seatType": "premium"
+    },
+    {
+      "id": "stalls-A-2",
+      "sectionId": "stalls",
+      "row": "A",
+      "number": 2,
+      "position": {
+        "x": 430,
+        "y": 150
+      },
+      "status": "available",
+      "pricePence": 18500,
+      "accessibility": false,
+      "seatType": "premium"
+    },
+    {
+      "id": "stalls-A-3",
+      "sectionId": "stalls",
+      "row": "A",
+      "number": 3,
+      "position": {
+        "x": 460,
+        "y": 150
+      },
+      "status": "booked",
+      "pricePence": 18500,
+      "accessibility": false,
+      "seatType": "premium"
+    },
+    {
+      "id": "stalls-A-4",
+      "sectionId": "stalls",
+      "row": "A",
+      "number": 4,
+      "position": {
+        "x": 490,
+        "y": 150
+      },
+      "status": "available",
+      "pricePence": 18500,
+      "accessibility": false,
+      "seatType": "premium"
+    },
+    {
+      "id": "stalls-B-1",
+      "sectionId": "stalls",
+      "row": "B",
+      "number": 1,
+      "position": {
+        "x": 395,
+        "y": 180
+      },
+      "status": "available",
+      "pricePence": 17500,
+      "accessibility": false,
+      "seatType": "premium"
+    },
+    {
+      "id": "dress-circle-A-1",
+      "sectionId": "dress-circle",
+      "row": "A",
+      "number": 1,
+      "position": {
+        "x": 450,
+        "y": 400
+      },
+      "status": "available",
+      "pricePence": 12500,
+      "accessibility": false,
+      "seatType": "standard"
+    },
+    {
+      "id": "dress-circle-A-2",
+      "sectionId": "dress-circle",
+      "row": "A",
+      "number": 2,
+      "position": {
+        "x": 480,
+        "y": 400
+      },
+      "status": "available",
+      "pricePence": 12500,
+      "accessibility": false,
+      "seatType": "standard"
+    },
+    {
+      "id": "upper-circle-A-1",
+      "sectionId": "upper-circle",
+      "row": "A",
+      "number": 1,
+      "position": {
+        "x": 400,
+        "y": 700
+      },
+      "status": "available",
+      "pricePence": 8500,
+      "accessibility": false,
+      "seatType": "standard"
+    },
+    {
+      "id": "box-left-1-1",
+      "sectionId": "boxes-tier1",
+      "row": "1",
+      "number": 1,
+      "position": {
+        "x": 150,
+        "y": 220
+      },
+      "status": "available",
+      "pricePence": 25000,
+      "accessibility": false,
+      "seatType": "premium"
+    },
+    {
+      "id": "box-left-1-2",
+      "sectionId": "boxes-tier1",
+      "row": "1",
+      "number": 2,
+      "position": {
+        "x": 180,
+        "y": 220
+      },
+      "status": "available",
+      "pricePence": 25000,
+      "accessibility": false,
+      "seatType": "premium"
+    }
+  ]
+} 
