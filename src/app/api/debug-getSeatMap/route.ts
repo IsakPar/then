@@ -62,6 +62,14 @@ export async function GET(request: NextRequest) {
       const docExists = await collection.findOne({ venueId })
       console.log('📋 Document exists check:', !!docExists)
       
+      // Check all documents in collection to see what venueIds exist
+      const allDocs = await collection.find({}, { projection: { _id: 1, venueId: 1 } }).toArray()
+      console.log('📋 All documents in collection:', allDocs.map(d => ({ _id: d._id, venueId: d.venueId })))
+      
+      // Try exact match search
+      const exactMatch = await collection.findOne({ venueId: 'her-majestys-theatre' })
+      console.log('🎯 Exact match search result:', !!exactMatch)
+      
       if (docExists) {
         console.log('📄 Document _id:', docExists._id)
         console.log('📄 Document venueId:', docExists.venueId)
@@ -86,6 +94,8 @@ export async function GET(request: NextRequest) {
          availableShows: Object.keys(docExists?.shows || {}),
          serviceCollectionName: serviceCollection.collectionName,
          availableCollections: collectionNames,
+         allDocuments: allDocs.map(d => ({ _id: d._id, venueId: d.venueId })),
+         exactMatchFound: !!exactMatch,
          debug: 'getSeatMap method returned null'
        })
     }
