@@ -29,14 +29,13 @@ class DataService: DataServiceProtocol {
     // MARK: - Shows
     
     func getShows() async throws -> [Show] {
-        // For now, always use mock data until API integration is complete
-        return generateMockShows()
+        // 🚀 PHASE 2 FIX: Use real API calls instead of mock data
+        print("🎭 Loading shows from real API...")
         
-        // Future API integration:
-        /*
         do {
             let shows = try await apiClient.getShows()
             await cacheService.cacheShows(shows)
+            print("✅ Successfully loaded \(shows.count) shows from API")
             return shows
         } catch {
             print("⚠️ API call failed: \(error)")
@@ -57,7 +56,6 @@ class DataService: DataServiceProtocol {
             print("⚠️ No cached data available, using mock data as fallback")
             return generateMockShows()
         }
-        */
     }
     
     func getShow(id: String) async throws -> Show {
