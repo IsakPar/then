@@ -1,0 +1,85 @@
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(request: NextRequest) {
+  try {
+    // Check if MongoDB is configured
+    if (!process.env.MONGODB_URI && !process.env.MONGODB_URL && !process.env.MONGO_URL) {
+      return NextResponse.json({ 
+        error: 'MongoDB not configured' 
+      }, { status: 503 })
+    }
+
+    // Dynamic import to prevent build-time connection
+    const { seatMapService } = await import('@/lib/mongodb/seatmap-service')
+    
+    console.log('🔍 Testing getSeatMap method...')
+    
+    const venueId = 'her-majestys-theatre'
+    const showSlug = 'phantom-of-the-opera'
+    
+    console.log(`📍 Looking for venueId: "${venueId}", showSlug: "${showSlug}"`)
+    
+    // Test the getSeatMap method directly
+    const seatMap = await seatMapService.getSeatMap(venueId, showSlug)
+    
+    if (seatMap) {
+      console.log('✅ getSeatMap found seat map!')
+      console.log(`📊 Sections: ${Object.keys(seatMap.sections).length}`)
+      
+      return NextResponse.json({
+        success: true,
+        found: true,
+        venueId,
+        showSlug,
+        sectionCount: Object.keys(seatMap.sections).length,
+        sectionNames: Object.keys(seatMap.sections),
+        layout: seatMap.layout,
+        metadata: seatMap.metadata || null
+      })
+    } else {
+      console.log('❌ getSeatMap returned null')
+      
+      // Try to debug the raw MongoDB query
+      const { getMongoDb } = await import('@/lib/mongodb/connection')
+      const db = await getMongoDb()
+      const collection = db.collection('seat map')
+      
+      // Test if document exists
+      const docExists = await collection.findOne({ venueId })
+      console.log('📋 Document exists check:', !!docExists)
+      
+      if (docExists) {
+        console.log('📄 Document _id:', docExists._id)
+        console.log('📄 Document venueId:', docExists.venueId)
+        console.log('📄 Shows keys:', Object.keys(docExists.shows || {}))
+        
+        // Try direct access
+        const showData = docExists.shows?.[showSlug]
+        console.log('🎭 Show data exists:', !!showData)
+        
+        if (showData) {
+          console.log('📊 Show sections:', Object.keys(showData.sections || {}))
+        }
+      }
+      
+      return NextResponse.json({
+        success: false,
+        found: false,
+        venueId,
+        showSlug,
+        documentExists: !!docExists,
+        showDataExists: !!(docExists?.shows?.[showSlug]),
+        availableShows: Object.keys(docExists?.shows || {}),
+        debug: 'getSeatMap method returned null'
+      })
+    }
+
+  } catch (error) {
+    console.error('❌ getSeatMap debug error:', error)
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to debug getSeatMap',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+} 
