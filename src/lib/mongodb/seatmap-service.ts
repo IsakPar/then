@@ -87,7 +87,7 @@ export class SeatMapService {
     
     if (!this.collection) {
       const db = await getMongoDb()
-      this.collection = db.collection<SeatMapDocument>('seat map')
+      this.collection = db.collection<SeatMapDocument>('seatmaps')
       
       // Create indexes for fast lookups
       await this.collection.createIndex({ venueId: 1, 'shows': 1 })
