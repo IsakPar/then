@@ -2,7 +2,7 @@ import { getMongoDb } from './connection'
 import { Collection } from 'mongodb'
 
 // Detect build time to avoid MongoDB connection during static generation
-const isBuildTime = typeof window === 'undefined' && !process.env.MONGODB_URI
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
 
 // Types for MongoDB seat map documents
 export interface SeatMapDocument {
