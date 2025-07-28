@@ -19,6 +19,14 @@ export async function GET(request: NextRequest) {
     
     console.log(`📍 Looking for venueId: "${venueId}", showSlug: "${showSlug}"`)
     
+    // Check what collection the service is actually using
+    console.log('🔍 Checking SeatMapService collection...')
+    
+    // Get the collection from seatMapService
+    // @ts-ignore - accessing private method for debugging
+    const serviceCollection = await seatMapService.getCollection()
+    console.log('📋 SeatMapService collection name:', serviceCollection.collectionName)
+    
     // Test the getSeatMap method directly
     const seatMap = await seatMapService.getSeatMap(venueId, showSlug)
     
@@ -42,6 +50,12 @@ export async function GET(request: NextRequest) {
       // Try to debug the raw MongoDB query
       const { getMongoDb } = await import('@/lib/mongodb/connection')
       const db = await getMongoDb()
+      
+      // First check what collections exist
+      const collections = await db.listCollections().toArray()
+      const collectionNames = collections.map(c => c.name)
+      console.log('🔍 Available collections:', collectionNames)
+      
       const collection = db.collection('seat map')
       
       // Test if document exists
@@ -62,16 +76,18 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      return NextResponse.json({
-        success: false,
-        found: false,
-        venueId,
-        showSlug,
-        documentExists: !!docExists,
-        showDataExists: !!(docExists?.shows?.[showSlug]),
-        availableShows: Object.keys(docExists?.shows || {}),
-        debug: 'getSeatMap method returned null'
-      })
+             return NextResponse.json({
+         success: false,
+         found: false,
+         venueId,
+         showSlug,
+         documentExists: !!docExists,
+         showDataExists: !!(docExists?.shows?.[showSlug]),
+         availableShows: Object.keys(docExists?.shows || {}),
+         serviceCollectionName: serviceCollection.collectionName,
+         availableCollections: collectionNames,
+         debug: 'getSeatMap method returned null'
+       })
     }
 
   } catch (error) {
